@@ -44,6 +44,27 @@ const findUserByEID = (req, res) => {
     .catch((err) => res.status(400).json(`Error: ${err}`));
 };
 
+const updateUser = (req, res) => {
+  User.findOne({ eID: req.params.eID })
+    .then((user) => {
+      firstName = req.body.firstName;
+      middleName = req.body.middleName;
+      lastName = req.body.lastName;
+      user.name = { firstName, middleName, lastName };
+      user.userName = req.body.userName;
+      user.password = req.body.password;
+      user.eID = Number(req.body.eID);
+      user.privilege = req.body.privilege;
+      user.modules = req.body.modules;
+
+      user
+        .save()
+        .then(() => res.json(`User ${req.params.eID} updated.`))
+        .catch((err) => res.status(400).json(`Error: ${err}`));
+    })
+    .catch((err) => res.status(400).json(`Error: ${err}`));
+};
+
 const deleteUser = (req, res) => {
   User.findByIdAndDelete(req.params.id)
     .then(() => res.json(`User ${req.params.id} deleted.`))
@@ -53,4 +74,5 @@ const deleteUser = (req, res) => {
 exports.createUser = createUser;
 exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
+exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
