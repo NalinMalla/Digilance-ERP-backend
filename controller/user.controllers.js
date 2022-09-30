@@ -1,3 +1,5 @@
+const jwt = require("jsonwebtoken");
+
 let User = require("../models/user.model");
 
 const createUser = (req, res) => {
@@ -71,8 +73,69 @@ const deleteUser = (req, res) => {
     .catch((err) => res.status(400).json(`Error: ${err}`));
 };
 
+const login = async (req, res, next) => {
+  let { userName, password } = req.body;
+
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ userName: userName });
+  } catch {
+    const error = new Error(`Error! Something went wrong while retrieving user ${userName}'s details.`);
+    return next(error);
+  }
+  if (!existingUser || existingUser.password != password) {
+    const error = Error("Incorrect User Name or Password.");
+    return next(error);
+  }
+
+  let token;
+  try {
+    //Creating jwt token
+    token = jwt.sign(
+      { eID: existingUser.eID, userName: existingUser.userName },
+      "secretkeyappearshere",
+      { expiresIn: "1h" }
+    );
+  } catch (err) {
+    console.log(err);
+    const error = new Error("Error! Something went wrong while creating token.");
+    return next(error);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      eID: existingUser.eID,
+      userName: existingUser.userName,
+      token: token,
+    },
+  });
+};
+
+const decodeToken = (req, res)=>{  
+  console.log(req);
+  // const token = req.headers.authorization.split(' ')[1];  //Authorization: 'Bearer TOKEN'
+
+  // if(!token)
+  // {
+  //     res.status(200).json({success:false, message: "Error! Token was not provided."});
+  // }
+
+  // //Decoding the token
+  // const decodedToken = jwt.verify(token,"secretkeyappearshere");
+  // res.status(200).json({
+  //   success: true,
+  //   data: {
+  //     eID: decodedToken.eID,
+  //     userName: decodedToken.userName,
+  //   },
+  // });
+};
+
 exports.createUser = createUser;
 exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
+exports.login = login;
+exports.decodeToken = decodeToken;
