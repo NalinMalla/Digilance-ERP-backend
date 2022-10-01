@@ -1,13 +1,18 @@
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
 let User = require("../models/user.model");
+let SignInLog = require("../models/userSignInLog.model")
 
-const createUser = (req, res) => {
+const createUser = async (req, res) => {
   const firstName = req.body.firstName;
   const middleName = req.body.middleName;
   const lastName = req.body.lastName;
 
   const eID = Number(req.body.eID);
+
+  const salt = await bcrypt.genSalt(10);
+  const secPassword = await bcrypt.hash(req.body.password,salt);
 
   const newUser = new User({
     eID: eID,
@@ -17,7 +22,7 @@ const createUser = (req, res) => {
       lastName,
     },
     userName: req.body.userName,
-    password: req.body.password,
+    password: secPassword,
     privilege: req.body.privilege,
     modules: req.body.modules,
   });
@@ -48,13 +53,16 @@ const findUserByEID = (req, res) => {
 
 const updateUser = (req, res) => {
   User.findOne({ eID: req.params.eID })
-    .then((user) => {
+    .then(async (user) => {
+      const salt = await bcrypt.genSalt(10);
+      const secPassword = await bcrypt.hash(req.body.password,salt);
+
       firstName = req.body.firstName;
       middleName = req.body.middleName;
       lastName = req.body.lastName;
       user.name = { firstName, middleName, lastName };
       user.userName = req.body.userName;
-      user.password = req.body.password;
+      user.password = secPassword;
       user.eID = Number(req.body.eID);
       user.privilege = req.body.privilege;
       user.modules = req.body.modules;
@@ -80,11 +88,34 @@ const login = async (req, res, next) => {
   try {
     existingUser = await User.findOne({ userName: userName });
   } catch {
-    const error = new Error(`Error! Something went wrong while retrieving user ${userName}'s details.`);
+    const error = new Error(
+      `Error! Something went wrong while retrieving user ${userName}'s details.`
+    );
     return next(error);
   }
-  if (!existingUser || existingUser.password != password) {
+
+  const passwordTest = await bcrypt.compare(password,existingUser.password);
+  if (!existingUser || !passwordTest) {
     const error = Error("Incorrect User Name or Password.");
+
+    // const userSignInLog = new SignInLog({
+    //   eID: eID,
+    //   name: {
+    //     firstName,
+    //     middleName,
+    //     lastName,
+    //   },
+    //   userName: req.body.userName,
+    //   password: secPassword,
+    //   privilege: req.body.privilege,
+    //   modules: req.body.modules,
+    // });
+  
+    // userSignInLog
+    //   .save()
+    //   .then(() => res.json(`User ${req.body.userName} signIn has been logged.`))
+    //   .catch((err) => res.status(400).json(`Error: ${err}`));
+    
     return next(error);
   }
 
@@ -98,7 +129,9 @@ const login = async (req, res, next) => {
     );
   } catch (err) {
     console.log(err);
-    const error = new Error("Error! Something went wrong while creating token.");
+    const error = new Error(
+      "Error! Something went wrong while creating token."
+    );
     return next(error);
   }
 
@@ -112,24 +145,23 @@ const login = async (req, res, next) => {
   });
 };
 
-const decodeToken = (req, res)=>{  
-  console.log(req);
-  // const token = req.headers.authorization.split(' ')[1];  //Authorization: 'Bearer TOKEN'
+const decodeToken = (req, res) => {
+  const token = req.headers.authorization.split(' ')[1];  //Authorization: 'Bearer TOKEN'
 
-  // if(!token)
-  // {
-  //     res.status(200).json({success:false, message: "Error! Token was not provided."});
-  // }
+  if(!token)
+  {
+      res.status(200).json({success:false, message: "Error! Token was not provided."});
+  }
 
-  // //Decoding the token
-  // const decodedToken = jwt.verify(token,"secretkeyappearshere");
-  // res.status(200).json({
-  //   success: true,
-  //   data: {
-  //     eID: decodedToken.eID,
-  //     userName: decodedToken.userName,
-  //   },
-  // });
+  //Decoding the token
+  const decodedToken = jwt.verify(token,"secretkeyappearshere");
+  res.status(200).json({
+    success: true,
+    data: {
+      eID: decodedToken.eID,
+      userName: decodedToken.userName,
+    },
+  });
 };
 
 exports.createUser = createUser;
