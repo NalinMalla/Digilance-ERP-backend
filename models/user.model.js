@@ -11,19 +11,7 @@ const UserSchema = new schema(
     },
 
     name: {
-      firstName: {
-        type: String,
-        required: [true, "First Name is mandatory."],
-        minlength: [1, "First Name cannot be blank."],
-      },
-      middleName: {
-        type: String,
-      },
-      lastName: {
-        type: String,
-        required: [true, "Last Name is mandatory."],
-        minlength: [1, "Last Name cannot be blank."],
-      },
+      type: String,
     },
 
     userName: {
@@ -36,32 +24,17 @@ const UserSchema = new schema(
     password: {
       type: String,
       required: true,
-      minlength: [4, "Password should be more than 3 characters."]
+      minlength: [4, "Password should be more than 3 characters."],
     },
+
+    passwordHistory: [{ type: String, required: true, unique: true }],
 
     privilege: {
       type: String,
       required: true,
     },
 
-    modules: {
-      dartaChalani: {
-        type: Boolean,
-        default: false,
-      },
-      employeeManagement: {
-        type: Boolean,
-        default: false,
-      },
-      payroll: {
-        type: Boolean,
-        default: false,
-      },
-      tiffin: {
-        type: Boolean,
-        default: false,
-      },
-    },
+    modules: [{ type: String, required: true, unique: true }],
 
     lock: {
       type: Boolean,

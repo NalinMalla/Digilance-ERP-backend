@@ -5,10 +5,6 @@ let User = require("../models/user.model");
 let SignInLog = require("../models/userSignInLog.model")
 
 const createUser = async (req, res) => {
-  const firstName = req.body.firstName;
-  const middleName = req.body.middleName;
-  const lastName = req.body.lastName;
-
   const eID = Number(req.body.eID);
 
   const salt = await bcrypt.genSalt(10);
@@ -16,11 +12,7 @@ const createUser = async (req, res) => {
 
   const newUser = new User({
     eID: eID,
-    name: {
-      firstName,
-      middleName,
-      lastName,
-    },
+    name: req.body.name,
     userName: req.body.userName,
     password: secPassword,
     privilege: req.body.privilege,
@@ -57,10 +49,7 @@ const updateUser = (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const secPassword = await bcrypt.hash(req.body.password,salt);
 
-      firstName = req.body.firstName;
-      middleName = req.body.middleName;
-      lastName = req.body.lastName;
-      user.name = { firstName, middleName, lastName };
+      user.name = req.body.name;
       user.userName = req.body.userName;
       user.password = secPassword;
       user.eID = Number(req.body.eID);
