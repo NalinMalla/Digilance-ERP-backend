@@ -47,18 +47,14 @@ const findUserByEID = (req, res) => {
 const updateUser = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then(async (user) => {
-      if(req.body.password)
-      {
+      if (req.body.password) {
         const salt = await bcrypt.genSalt(10);
         const secPassword = await bcrypt.hash(req.body.password, salt);
         user.password = secPassword;
-        if(user.passwordHistory.length === 5)
-        {
+        if (user.passwordHistory.length === 5) {
           user.passwordHistory.shift();
           user.passwordHistory = [...user.passwordHistory, secPassword];
-        }
-        else
-        {
+        } else {
           user.passwordHistory = [...user.passwordHistory, secPassword];
         }
       }
@@ -86,16 +82,43 @@ const deleteUser = (req, res) => {
 const logUserSignIn = (user, error, clientIP) => {
   let eID = null;
   let userName = null;
-  if(user){
-    eID= user.eID;
-    userName= user.userName;
+  if (user) {
+    eID = user.eID;
+    userName = user.userName;
+    if (error !== null) {
+      User.findOne({ eID: eID })
+        .then((user) => {
+          user.countLoginMistakes += 1;
+          if (user.countLoginMistakes >= 3) {
+            user.lock = true;
+          }
+          user
+            .save()
+            .then(() =>
+              console.log(`User ${eID} countLoginMistakes incremented.`)
+            )
+            .catch((err) => console.log(`Error: ${err}`));
+        })
+        .catch((err) => console.log(`Error: ${err}`));
+    } else {
+      User.findOne({ eID: eID })
+        .then((user) => {
+          user.countLoginMistakes = 0;
+          user.lock = false;
+          user
+            .save()
+            .then(() => console.log(`User ${eID} countLoginMistakes reset.`))
+            .catch((err) => console.log(`Error: ${err}`));
+        })
+        .catch((err) => console.log(`Error: ${err}`));
+    }
   }
   const userSignInLog = new SignInLog({
     eID: eID,
     userName: userName,
     errorCode: error,
     // continuityField: user,
-    remarks: (error)?"Unsuccessful Login": "Successful Login",
+    remarks: error ? "Unsuccessful Login" : "Successful Login",
 
     loggingIP: clientIP,
   });
@@ -108,7 +131,8 @@ const logUserSignIn = (user, error, clientIP) => {
 
 const login = async (req, res, next) => {
   let { userName, password } = req.body;
-  let clientIP = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
+  let clientIP =
+    req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
   let existingUser, token;
   try {
     existingUser = await User.findOne({ userName: userName });
@@ -117,15 +141,26 @@ const login = async (req, res, next) => {
       `Error! Something went wrong while retrieving user ${userName}'s details.`
     );
 
-    logUserSignIn(existingUser, error, clientIP);  
+    logUserSignIn(existingUser, error, clientIP);
     return next(error);
   }
-  if(existingUser)
-  {
+  if (existingUser) {
     const passwordTest = await bcrypt.compare(password, existingUser.password);
-    if (!passwordTest) {
-      const error = Error("Incorrect User Name or Password.");
-      logUserSignIn(existingUser, `Incorrect password i.e. '${password}' used for login.`, clientIP);
+    if (!existingUser.lock) {
+      if (!passwordTest) {
+        const error = Error("Incorrect User Name or Password.");
+        logUserSignIn(
+          existingUser,
+          `Incorrect password i.e. '${password}' used for login.`,
+          clientIP
+        );
+        return next(error);
+      }
+    } else {
+      const error = Error(
+        "User Account has been locked. Please contact your IT Admin to unlock your account."
+      );
+      logUserSignIn(existingUser, error, clientIP);
       return next(error);
     }
 
@@ -141,10 +176,10 @@ const login = async (req, res, next) => {
       const error = new Error(
         "Error! Something went wrong while creating token."
       );
-      logUserSignIn(existingUser, error, clientIP);  
+      logUserSignIn(existingUser, error, clientIP);
       return next(error);
     }
-  
+
     logUserSignIn(existingUser, null, clientIP);
     res.status(200).json({
       success: true,
@@ -154,8 +189,7 @@ const login = async (req, res, next) => {
         token: token,
       },
     });
-  }
-  else{
+  } else {
     const error = Error("Incorrect User Name or Password.");
     logUserSignIn(existingUser, `User '${userName}' doesn't exist.`, clientIP);
     return next(error);

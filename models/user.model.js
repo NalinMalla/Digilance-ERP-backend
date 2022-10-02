@@ -34,7 +34,12 @@ const UserSchema = new schema(
       required: true,
     },
 
-    modules: [{ type: String, required: true, unique: true }],
+    modules: [{ type: String, required: true}],
+
+    countLoginMistakes: {
+      type: Number,
+      default: 0
+    },
 
     lock: {
       type: Boolean,
