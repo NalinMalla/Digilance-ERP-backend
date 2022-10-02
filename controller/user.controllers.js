@@ -15,6 +15,7 @@ const createUser = async (req, res) => {
     name: req.body.name,
     userName: req.body.userName,
     password: secPassword,
+    passwordHistory: [secPassword],
     privilege: req.body.privilege,
     modules: req.body.modules,
   });
@@ -46,12 +47,24 @@ const findUserByEID = (req, res) => {
 const updateUser = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then(async (user) => {
-      const salt = await bcrypt.genSalt(10);
-      const secPassword = await bcrypt.hash(req.body.password, salt);
+      if(req.body.password)
+      {
+        const salt = await bcrypt.genSalt(10);
+        const secPassword = await bcrypt.hash(req.body.password, salt);
+        user.password = secPassword;
+        if(user.passwordHistory.length === 5)
+        {
+          user.passwordHistory.shift();
+          user.passwordHistory = [...user.passwordHistory, secPassword];
+        }
+        else
+        {
+          user.passwordHistory = [...user.passwordHistory, secPassword];
+        }
+      }
 
       user.name = req.body.name;
       user.userName = req.body.userName;
-      user.password = secPassword;
       user.eID = Number(req.body.eID);
       user.privilege = req.body.privilege;
       user.modules = req.body.modules;
