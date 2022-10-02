@@ -6,13 +6,10 @@ const UserSignInLogSchema = new schema(
   {
     eID: {
       type: Number,
-      // required: [true, "Employee ID is mandatory."],
     },
 
     userName: {
       type: String,
-      // required: true,
-      // minlength: [5, "User Name should be more than 4 characters."],
     },
 
     errorCode: {

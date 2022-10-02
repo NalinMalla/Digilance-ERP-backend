@@ -9,12 +9,4 @@ router.route("/delete/:id").delete(userController.deleteUser);
 router.route("/login").post(userController.login);
 router.route("/accessResource").post(userController.decodeToken);
 
-router.route("/requestIP").post(
-  (req, res) => {
-    var clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
-    console.log(clientIp);
-    res.send(clientIp);
-  }
-);
-
 module.exports = router;
