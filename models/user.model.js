@@ -34,7 +34,12 @@ const UserSchema = new schema(
       required: true,
     },
 
-    modules: [{ type: String, required: true}],
+    modules: [
+      {
+        name: { type: String, required: true },
+        isChecked: { type: Boolean, required: true },
+      },
+    ],
 
     countLoginMistakes: {
       type: Number,
