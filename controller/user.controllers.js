@@ -137,31 +137,28 @@ const login = async (req, res, next) => {
   try {
     existingUser = await User.findOne({ userName: userName });
   } catch {
-    const error = new Error(
-      `Error! Something went wrong while retrieving user ${userName}'s details.`
-    );
-
+    const error = `Error! Something went wrong while retrieving user ${userName}'s details.`;
+    res.status(500).send({ message: error });
     logUserSignIn(existingUser, error, clientIP);
-    return next(error);
+    return;
   }
   if (existingUser) {
     const passwordTest = await bcrypt.compare(password, existingUser.password);
     if (!existingUser.lock) {
       if (!passwordTest) {
-        const error = Error("Incorrect User Name or Password.");
+        res.status(401).send({ message: "Incorrect User Name or Password." });
         logUserSignIn(
           existingUser,
           `Incorrect password i.e. '${password}' used for login.`,
           clientIP
         );
-        return next(error);
+        return;
       }
     } else {
-      const error = Error(
-        "User Account has been locked. Please contact your IT Admin to unlock your account."
-      );
+      const error = "User Account has been locked. Please contact your IT Admin to unlock your account.";
+      res.status(401).send({ message: error });
       logUserSignIn(existingUser, error, clientIP);
-      return next(error);
+      return;
     }
 
     try {
@@ -172,12 +169,10 @@ const login = async (req, res, next) => {
         { expiresIn: "1h" }
       );
     } catch (err) {
-      console.log(err);
-      const error = new Error(
-        "Error! Something went wrong while creating token."
-      );
+      const error = "Error! Something went wrong while creating token.";
+      res.status(500).send({ message: error });
       logUserSignIn(existingUser, error, clientIP);
-      return next(error);
+      return;
     }
 
     logUserSignIn(existingUser, null, clientIP);
@@ -190,9 +185,9 @@ const login = async (req, res, next) => {
       },
     });
   } else {
-    const error = Error("Incorrect User Name or Password.");
+    res.status(401).send({ message: "Incorrect User Name or Password." });
     logUserSignIn(existingUser, `User '${userName}' doesn't exist.`, clientIP);
-    return next(error);
+    return;
   }
 };
 
