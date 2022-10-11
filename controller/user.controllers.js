@@ -155,7 +155,8 @@ const login = async (req, res, next) => {
         return;
       }
     } else {
-      const error = "User Account has been locked. Please contact your IT Admin to unlock your account.";
+      const error =
+        "User Account has been locked. Please contact your IT Admin to unlock your account.";
       res.status(401).send({ error: error });
       logUserSignIn(existingUser, error, clientIP);
       return;
@@ -192,9 +193,24 @@ const login = async (req, res, next) => {
   }
 };
 
+const resetLock = (req, res) => {
+  console.log(req.params);
+  User.findOne({ eID: req.params.eID })
+    .then((user) => {
+      user.countLoginMistakes = 0;
+      user.lock = false;
+      user
+        .save()
+        .then(() => res.json(`User ${req.params.eID} lock disabled.`))
+        .catch((err) => res.json(`Error: ${err}`));
+    })
+    .catch((err) => console.log(`Error: ${err}`));
+};
+
 exports.createUser = createUser;
 exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
+exports.resetLock = resetLock;

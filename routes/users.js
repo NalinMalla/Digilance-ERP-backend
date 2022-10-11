@@ -9,6 +9,7 @@ router.route("/:eID").get(userController.findUserByEID);
 router.route("/update/:eID").put(userController.updateUser);
 router.route("/delete/:id").delete(userController.deleteUser);
 router.route("/login").post(userController.login);
+router.route("/unlock/:eID").post([authJwt.verifyToken, authJwt.isAdmin],userController.resetLock);
 router.route("/authJwt").post(authJwt.verifyToken, authJwt.isAdmin, authJwt.authResponse);
 
 module.exports = router;
