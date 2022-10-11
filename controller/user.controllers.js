@@ -138,7 +138,7 @@ const login = async (req, res, next) => {
     existingUser = await User.findOne({ userName: userName });
   } catch {
     const error = `Error! Something went wrong while retrieving user ${userName}'s details.`;
-    res.status(500).send({ message: error });
+    res.status(500).send({ error: error });
     logUserSignIn(existingUser, error, clientIP);
     return;
   }
@@ -146,7 +146,7 @@ const login = async (req, res, next) => {
     const passwordTest = await bcrypt.compare(password, existingUser.password);
     if (!existingUser.lock) {
       if (!passwordTest) {
-        res.status(401).send({ message: "Incorrect User Name or Password." });
+        res.status(401).send({ error: "Incorrect User Name or Password." });
         logUserSignIn(
           existingUser,
           `Incorrect password i.e. '${password}' used for login.`,
@@ -156,7 +156,7 @@ const login = async (req, res, next) => {
       }
     } else {
       const error = "User Account has been locked. Please contact your IT Admin to unlock your account.";
-      res.status(401).send({ message: error });
+      res.status(401).send({ error: error });
       logUserSignIn(existingUser, error, clientIP);
       return;
     }
@@ -166,11 +166,11 @@ const login = async (req, res, next) => {
       token = jwt.sign(
         { eID: existingUser.eID, userName: existingUser.userName },
         "secretkeyappearshere",
-        { expiresIn: "1h" }
+        { expiresIn: 86400 }
       );
     } catch (err) {
       const error = "Error! Something went wrong while creating token.";
-      res.status(500).send({ message: error });
+      res.status(500).send({ error: error });
       logUserSignIn(existingUser, error, clientIP);
       return;
     }
@@ -185,30 +185,10 @@ const login = async (req, res, next) => {
       },
     });
   } else {
-    res.status(401).send({ message: "Incorrect User Name or Password." });
+    res.status(401).send({ error: "Incorrect User Name or Password." });
     logUserSignIn(existingUser, `User '${userName}' doesn't exist.`, clientIP);
     return;
   }
-};
-
-const decodeToken = (req, res) => {
-  const token = req.headers.authorization.split(" ")[1]; //Authorization: 'Bearer TOKEN'
-
-  if (!token) {
-    res
-      .status(200)
-      .json({ success: false, message: "Error! Token was not provided." });
-  }
-
-  //Decoding the token
-  const decodedToken = jwt.verify(token, "secretkeyappearshere");
-  res.status(200).json({
-    success: true,
-    data: {
-      eID: decodedToken.eID,
-      userName: decodedToken.userName,
-    },
-  });
 };
 
 exports.createUser = createUser;
@@ -217,4 +197,3 @@ exports.findUserByEID = findUserByEID;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
-exports.decodeToken = decodeToken;
