@@ -181,6 +181,7 @@ const login = async (req, res, next) => {
       data: {
         eID: existingUser.eID,
         userName: existingUser.userName,
+        privilege: existingUser.privilege,
         token: token,
       },
     });
