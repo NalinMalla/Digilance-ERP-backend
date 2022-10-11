@@ -1,6 +1,28 @@
 const jwt = require("jsonwebtoken");
 
 let User = require("../models/user.model");
+let AccessLog = require("../models/userAccessLog.model");
+
+const logUserAccess = (user, error, clientIP) => {
+  let eID = null;
+  let userName = null;
+  if (user) {
+    eID = user.eID;
+    userName = user.userName;
+  }
+  const userAccessLog = new AccessLog({
+    eID: eID,
+    userName: userName,
+    error: error,
+    remarks: error ? "Unsuccessful Login" : "Successful Login",
+    loggingIP: clientIP,
+  });
+
+  userAccessLog
+    .save()
+    .then(() => console.log(`User ${user.userName}'s activity has been logged.`))
+    .catch((err) => console.log(`Error: ${err}`));
+};
 
 const verifyToken = (req, res, next) => {
   // let token = req.headers["x-access-token"];
@@ -24,15 +46,19 @@ const verifyToken = (req, res, next) => {
 
 const isAdmin = (req, res, next) => {
   User.findOne({ eID: req.eID }).exec((err, user) => {
+    let clientIP =
+    req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
     if (err) {
       res.status(500).send({ error: err });
+      logUserAccess(user, err, clientIP);
       return;
     }
 
     console.log(user.privilege);
 
     if (user.privilege !== "Admin") {
-      res.status(403).send({ error: "Require Admin Role!" });
+      res.status(403).send({ error: "Admin Privilege is required!" });
+      logUserAccess(user, "Admin Privilege is required!", clientIP);
       return;
     }
     next();
