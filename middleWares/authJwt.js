@@ -20,34 +20,42 @@ const logUserAccess = (user, error, clientIP) => {
 
   userAccessLog
     .save()
-    .then(() => console.log(`User ${user.userName}'s activity has been logged.`))
+    .then(() =>
+      console.log(`User ${user.userName}'s activity has been logged.`)
+    )
     .catch((err) => console.log(`Error: ${err}`));
 };
 
 const verifyToken = (req, res, next) => {
   // let token = req.headers["x-access-token"];
-  const token = req.headers.authorization.split(" ")[1]; //Authorization: 'Bearer TOKEN'
+  if (req.headers.authorization) {
+    const token = req.headers.authorization.split(" ")[1]; //Authorization: 'Bearer TOKEN'
 
-  if (!token) {
-    return res.status(403).send({ error: "No token provided!" });
-  }
-
-  jwt.verify(token, "secretkeyappearshere", (err, decoded) => {
-    if (err) {
-      return res.status(401).send({ error: "Unauthorized!" });
+    if (!token) {
+      return res.status(403).send({ error: "No token provided!" });
     }
-    console.log("decoded");
-    console.log(decoded);
-    req.eID = decoded.eID;
 
-    next();
-  });
+    jwt.verify(token, "secretkeyappearshere", (err, decoded) => {
+      if (err) {
+        return res.status(401).send({ error: "Unauthorized!" });
+      }
+      console.log("decoded");
+      console.log(decoded);
+      req.eID = decoded.eID;
+
+      next();
+    });
+  }
+  else
+  {
+    return res.status(400).send({ error: "Authorization Token is required for this request!" });
+  }
 };
 
 const isAdmin = (req, res, next) => {
   User.findOne({ eID: req.eID }).exec((err, user) => {
     let clientIP =
-    req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
+      req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
     if (err) {
       res.status(500).send({ error: err });
       logUserAccess(user, err, clientIP);
