@@ -6,10 +6,13 @@ const userController = require("../controller/user.controllers");
 router.route("/").get([authJwt.verifyToken, authJwt.isAdmin],userController.findAllUsers);
 router.route("/add").post([authJwt.verifyToken, authJwt.isAdmin],userController.createUser);
 router.route("/:eID").get(userController.findUserByEID);
-router.route("/update/:eID").put(userController.updateUser);
-router.route("/delete/:id").delete(userController.deleteUser);
+router.route("/update/:eID").put([authJwt.verifyToken, authJwt.isAdmin],userController.updateUser);
+router.route("/delete").post([authJwt.verifyToken, authJwt.isAdmin],userController.deleteUser);
 router.route("/login").post(userController.login);
 router.route("/unlock/:eID").post([authJwt.verifyToken, authJwt.isAdmin],userController.resetLock);
 router.route("/authJwt").post(authJwt.verifyToken, authJwt.isAdmin, authJwt.authResponse);
+router.route("/signInLogs").post([authJwt.verifyToken, authJwt.isAdmin],userController.findAllSignInLog);
+router.route("/accessLogs").post([authJwt.verifyToken, authJwt.isAdmin],userController.findAllAccessLog);
+
 
 module.exports = router;

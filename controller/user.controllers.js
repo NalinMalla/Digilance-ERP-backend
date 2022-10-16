@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 
 let User = require("../models/user.model");
 let SignInLog = require("../models/userSignInLog.model");
+let AccessLog = require("../models/userAccessLog.model");
 
 const createUser = async (req, res) => {
   const eID = Number(req.body.eID);
@@ -74,8 +75,8 @@ const updateUser = (req, res) => {
 };
 
 const deleteUser = (req, res) => {
-  User.findByIdAndDelete(req.params.id)
-    .then(() => res.json(`User ${req.params.id} deleted.`))
+  User.findByIdAndDelete(req.body.eID)
+    .then(() => res.json(`User ${req.params.eID} deleted.`))
     .catch((err) => res.status(400).json(`Error: ${err}`));
 };
 
@@ -207,6 +208,18 @@ const resetLock = (req, res) => {
     .catch((err) => console.log(`Error: ${err}`));
 };
 
+const findAllSignInLog = (req, res) => {
+  SignInLog.find()
+    .then((log) => res.json(log))
+    .catch((err) => res.status(400).json(`Error: ${err}`));
+};
+
+const findAllAccessLog = (req, res) => {
+  AccessLog.find()
+    .then((log) => res.json(log))
+    .catch((err) => res.status(400).json(`Error: ${err}`));
+};
+
 exports.createUser = createUser;
 exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
@@ -214,3 +227,5 @@ exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
 exports.resetLock = resetLock;
+exports.findAllSignInLog = findAllSignInLog;
+exports.findAllAccessLog = findAllAccessLog;
