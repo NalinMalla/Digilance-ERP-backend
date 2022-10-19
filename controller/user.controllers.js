@@ -75,7 +75,7 @@ const updateUser = (req, res) => {
 };
 
 const deleteUser = (req, res) => {
-  User.findByIdAndDelete(req.body.eID)
+  User.deleteOne({ eID: req.params.eID })
     .then(() => res.json(`User ${req.params.eID} deleted.`))
     .catch((err) => res.status(400).json(`Error: ${err}`));
 };
