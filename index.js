@@ -19,7 +19,7 @@ app.use("/users", usersRouter);
 app.use("/uploads", express.static("uploads")); //ignores /uploads in url
 
 //  Connect to MongoDB database.
-const ATLAS_URI = "mongodb+srv://Admin:!herojk6123@cluster0.h928uzt.mongodb.net/Login?retryWrites=true&w=majority";
+const ATLAS_URI = "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.5.0";
 mongoose
   .connect(ATLAS_URI, {
     useNewUrlParser: true,
