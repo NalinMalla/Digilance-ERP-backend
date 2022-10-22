@@ -194,15 +194,26 @@ const login = async (req, res, next) => {
   }
 };
 
-const resetLock = (req, res) => {
-  console.log(req.params);
+const unlockUserByID = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then((user) => {
       user.countLoginMistakes = 0;
       user.lock = false;
       user
         .save()
-        .then(() => res.json(`User ${req.params.eID} lock disabled.`))
+        .then(() => res.json(`User ${req.params.eID} account has been unlocked.`))
+        .catch((err) => res.json(`Error: ${err}`));
+    })
+    .catch((err) => console.log(`Error: ${err}`));
+};
+
+const lockUserByID = (req, res) => {
+  User.findOne({ eID: req.params.eID })
+    .then((user) => {
+      user.lock = true;
+      user
+        .save()
+        .then(() => res.json(`User ${req.params.eID} account has been locked.`))
         .catch((err) => res.json(`Error: ${err}`));
     })
     .catch((err) => console.log(`Error: ${err}`));
@@ -226,6 +237,7 @@ exports.findUserByEID = findUserByEID;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
-exports.resetLock = resetLock;
+exports.unlockUserByID = unlockUserByID;
+exports.lockUserByID = lockUserByID;
 exports.findAllSignInLog = findAllSignInLog;
 exports.findAllAccessLog = findAllAccessLog;
