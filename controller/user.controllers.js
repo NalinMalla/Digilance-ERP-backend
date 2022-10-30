@@ -120,7 +120,6 @@ const logUserSignIn = (user, error, clientIP) => {
     errorCode: error,
     // continuityField: user,
     remarks: error ? "Unsuccessful Login" : "Successful Login",
-
     loggingIP: clientIP,
   });
 
@@ -184,6 +183,7 @@ const login = async (req, res, next) => {
         eID: existingUser.eID,
         userName: existingUser.userName,
         privilege: existingUser.privilege,
+        modules: existingUser.modules,
         token: token,
       },
     });
