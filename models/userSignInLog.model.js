@@ -12,6 +12,10 @@ const UserSignInLogSchema = new schema(
       type: String,
     },
 
+    privilege: {
+      type: String,
+    },
+
     errorCode: {
       type: String
     },

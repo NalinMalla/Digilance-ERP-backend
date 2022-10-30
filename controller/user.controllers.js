@@ -83,9 +83,11 @@ const deleteUser = (req, res) => {
 const logUserSignIn = (user, error, clientIP) => {
   let eID = null;
   let userName = null;
+  let privilege = null;
   if (user) {
     eID = user.eID;
     userName = user.userName;
+    privilege = user.privilege;
     if (error !== null) {
       User.findOne({ eID: eID })
         .then((user) => {
@@ -117,8 +119,8 @@ const logUserSignIn = (user, error, clientIP) => {
   const userSignInLog = new SignInLog({
     eID: eID,
     userName: userName,
+    privilege: privilege,
     errorCode: error,
-    // continuityField: user,
     remarks: error ? "Unsuccessful Login" : "Successful Login",
     loggingIP: clientIP,
   });
@@ -131,6 +133,7 @@ const logUserSignIn = (user, error, clientIP) => {
 
 const login = async (req, res, next) => {
   let { userName, password } = req.body;
+  let privilege;
   let clientIP =
     req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
   let existingUser, token;
