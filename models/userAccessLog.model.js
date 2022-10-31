@@ -12,6 +12,10 @@ const UserAccessLogSchema = new schema(
       type: String,
     },
 
+    privilege: {
+      type: String
+    },
+
     accessedModule: {
       type: String
     },
@@ -26,7 +30,19 @@ const UserAccessLogSchema = new schema(
 
     remarks: {
       type: String
-    }
+    },
+
+    validToken: {
+      type: Boolean
+    },
+
+    validPrivilege: {
+      type: Boolean
+    },
+
+    validRole: {
+      type: Boolean
+    },
  
   },
   {

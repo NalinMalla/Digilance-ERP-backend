@@ -133,7 +133,6 @@ const logUserSignIn = (user, error, clientIP) => {
 
 const login = async (req, res, next) => {
   let { userName, password } = req.body;
-  let privilege;
   let clientIP =
     req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
   let existingUser, token;
