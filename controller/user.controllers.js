@@ -4,7 +4,10 @@ const bcrypt = require("bcryptjs");
 let User = require("../models/user.model");
 let SignInLog = require("../models/userSignInLog.model");
 let AccessLog = require("../models/userAccessLog.model");
+let PasswordComplexity = require("../models/passwordComplexity.model");
+// let userLock = require("../middleWares/userLock");
 
+//Basic User CRUD functions
 const createUser = async (req, res) => {
   const eID = Number(req.body.eID);
 
@@ -23,14 +26,19 @@ const createUser = async (req, res) => {
 
   newUser
     .save()
-    .then(() => res.json(`User ${req.body.userName} Added.`))
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .then(() =>
+      res.json({
+        success: true,
+        message: `New user ${req.body.userName} created.`,
+      })
+    )
+    .catch((err) => res.status(400).json(err));
 };
 
 const findAllUsers = (req, res) => {
   User.find()
     .then((users) => res.json(users))
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .catch((err) => res.status(400).json(err));
 };
 
 const findUserByEID = (req, res) => {
@@ -39,10 +47,10 @@ const findUserByEID = (req, res) => {
       user === null
         ? res
             .status(404)
-            .json(`User with eID ${req.params.eID} does not exists.`)
+            .json({ error: `User with eID ${req.params.eID} does not exist.` })
         : res.json(user)
     )
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .catch((err) => res.status(400).json(err));
 };
 
 const updateUser = (req, res) => {
@@ -68,17 +76,29 @@ const updateUser = (req, res) => {
 
       user
         .save()
-        .then(() => res.json(`User ${req.params.eID} updated.`))
-        .catch((err) => res.status(400).json(`Error: ${err}`));
+        .then(() =>
+          res.json({
+            success: true,
+            message: `User ${req.params.eID} updated.`,
+          })
+        )
+        .catch((err) => res.status(400).json(err));
     })
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .catch((err) => res.status(400).json(err));
 };
 
 const deleteUser = (req, res) => {
   User.deleteOne({ eID: req.params.eID })
-    .then(() => res.json(`User ${req.params.eID} deleted.`))
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .then(() =>
+      res.json({
+        success: true,
+        message: `User with eID:${req.params.eID} deleted.`,
+      })
+    )
+    .catch((err) => res.status(400).json(err));
 };
+
+//User login modules
 
 const logUserSignIn = (user, error, clientIP) => {
   let eID = null;
@@ -88,7 +108,7 @@ const logUserSignIn = (user, error, clientIP) => {
     eID = user.eID;
     userName = user.userName;
     privilege = user.privilege;
-    if (error !== null) {
+    if (error) {
       User.findOne({ eID: eID })
         .then((user) => {
           user.countLoginMistakes += 1;
@@ -100,9 +120,9 @@ const logUserSignIn = (user, error, clientIP) => {
             .then(() =>
               console.log(`User ${eID} countLoginMistakes incremented.`)
             )
-            .catch((err) => console.log(`Error: ${err}`));
+            .catch((err) => console.log(err));
         })
-        .catch((err) => console.log(`Error: ${err}`));
+        .catch((err) => console.log(err));
     } else {
       User.findOne({ eID: eID })
         .then((user) => {
@@ -111,9 +131,9 @@ const logUserSignIn = (user, error, clientIP) => {
           user
             .save()
             .then(() => console.log(`User ${eID} countLoginMistakes reset.`))
-            .catch((err) => console.log(`Error: ${err}`));
+            .catch((err) => console.log(err));
         })
-        .catch((err) => console.log(`Error: ${err}`));
+        .catch((err) => console.log(err));
     }
   }
   const userSignInLog = new SignInLog({
@@ -128,7 +148,7 @@ const logUserSignIn = (user, error, clientIP) => {
   userSignInLog
     .save()
     .then(() => console.log(`User ${user.userName} signIn has been logged.`))
-    .catch((err) => console.log(`Error: ${err}`));
+    .catch((err) => console.log(err));
 };
 
 const login = async (req, res, next) => {
@@ -140,15 +160,17 @@ const login = async (req, res, next) => {
     existingUser = await User.findOne({ userName: userName });
   } catch {
     const error = `Error! Something went wrong while retrieving user ${userName}'s details.`;
-    res.status(500).send({ error: error });
+    res.status(500).send({ errors: true, message: error });
     logUserSignIn(existingUser, error, clientIP);
     return;
   }
   if (existingUser) {
     const passwordTest = await bcrypt.compare(password, existingUser.password);
-    if (!existingUser.lock) {
+    if (!userLockCheck(existingUser)) {
       if (!passwordTest) {
-        res.status(401).send({ error: "Incorrect User Name or Password." });
+        res
+          .status(401)
+          .send({ errors: true, message: "Incorrect User Name or Password." });
         logUserSignIn(
           existingUser,
           `Incorrect password i.e. '${password}' used for login.`,
@@ -159,7 +181,7 @@ const login = async (req, res, next) => {
     } else {
       const error =
         "User Account has been locked. Please contact your IT Admin to unlock your account.";
-      res.status(401).send({ error: error });
+      res.status(401).send({ errors: true, message: error });
       logUserSignIn(existingUser, error, clientIP);
       return;
     }
@@ -173,7 +195,7 @@ const login = async (req, res, next) => {
       );
     } catch (err) {
       const error = "Error! Something went wrong while creating token.";
-      res.status(500).send({ error: error });
+      res.status(500).send({ errors: true, message: error });
       logUserSignIn(existingUser, error, clientIP);
       return;
     }
@@ -181,7 +203,7 @@ const login = async (req, res, next) => {
     logUserSignIn(existingUser, null, clientIP);
     res.status(200).json({
       success: true,
-      data: {
+      message: {
         eID: existingUser.eID,
         userName: existingUser.userName,
         privilege: existingUser.privilege,
@@ -190,9 +212,35 @@ const login = async (req, res, next) => {
       },
     });
   } else {
-    res.status(401).send({ error: "Incorrect User Name or Password." });
+    res
+      .status(401)
+      .send({ errors: true, message: "Incorrect User Name or Password." });
     logUserSignIn(existingUser, `User '${userName}' doesn't exist.`, clientIP);
     return;
+  }
+};
+
+const userLockCheck = (user) => {
+  if (user.lock) {
+    if (user.lockPeriod) {
+      let lockPeriodTimestamp = Date.parse(user.lockPeriod); //Converting date to timestamp for comparison
+
+      //Comparing lockPeriod timestamp to current timestamp
+      if (lockPeriodTimestamp <= Date.now()) {
+        //Creating user defined req & res for compatibility with unlockUserByID(req, res)
+        let req = { params: { eID: user.eID } };
+        let res = {
+          json: (msg) => {
+            console.log(msg);
+          },
+        };
+        unlockUserByID(req, res);
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
   }
 };
 
@@ -201,36 +249,84 @@ const unlockUserByID = (req, res) => {
     .then((user) => {
       user.countLoginMistakes = 0;
       user.lock = false;
+      user.lockPeriod = null;
       user
         .save()
-        .then(() => res.json(`User ${req.params.eID} account has been unlocked.`))
-        .catch((err) => res.json(`Error: ${err}`));
+        .then(() =>
+          res.json({
+            success: true,
+            message: `User ${req.params.eID} account has been unlocked.`,
+          })
+        )
+        .catch((err) => res.json(err));
     })
-    .catch((err) => console.log(`Error: ${err}`));
+    .catch((err) => res.json(err));
 };
 
 const lockUserByID = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then((user) => {
       user.lock = true;
+      if (req.body.lockPeriod) {
+        user.lockPeriod = new Date(req.body.lockPeriod);
+      }
+
       user
         .save()
-        .then(() => res.json(`User ${req.params.eID} account has been locked.`))
-        .catch((err) => res.json(`Error: ${err}`));
+        .then(() =>
+          res.json({
+            success: true,
+            message: `User ${req.params.eID} account has been locked.`,
+          })
+        )
+        .catch((err) => res.json(err));
     })
-    .catch((err) => console.log(`Error: ${err}`));
+    .catch((err) => console.log(err));
 };
+
+//User Logs modules
 
 const findAllSignInLog = (req, res) => {
   SignInLog.find()
     .then((log) => res.json(log))
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .catch((err) => res.status(400).json(err));
 };
 
 const findAllAccessLog = (req, res) => {
   AccessLog.find()
     .then((log) => res.json(log))
-    .catch((err) => res.status(400).json(`Error: ${err}`));
+    .catch((err) => res.status(400).json(err));
+};
+
+//User password complexity controls
+
+const updatePasswordComplexity = (req, res) => {
+  PasswordComplexity.findOne()
+    .then((passwordComplexity) => {
+      if (passwordComplexity) {
+        passwordComplexity.complexity = req.body.complexity;
+      } else {
+        passwordComplexity = new PasswordComplexity({
+          complexity: req.body.complexity,
+        });
+      }
+      passwordComplexity
+        .save()
+        .then(() =>
+          res.json({
+            success: true,
+            message: `PasswordComplexity has been updated.`,
+          })
+        )
+        .catch((err) => res.json(err));
+    })
+    .catch((err) => res.json(err));
+};
+
+const retrievePasswordComplexity = (req, res) => {
+  PasswordComplexity.findOne()
+    .then((complexity) => res.json(complexity))
+    .catch((err) => res.status(400).json(err));
 };
 
 exports.createUser = createUser;
@@ -243,3 +339,5 @@ exports.unlockUserByID = unlockUserByID;
 exports.lockUserByID = lockUserByID;
 exports.findAllSignInLog = findAllSignInLog;
 exports.findAllAccessLog = findAllAccessLog;
+exports.updatePasswordComplexity = updatePasswordComplexity;
+exports.retrievePasswordComplexity = retrievePasswordComplexity;

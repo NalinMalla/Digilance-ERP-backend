@@ -52,6 +52,10 @@ const UserSchema = new schema(
       default: false,
     },
 
+    lockPeriod: {
+      type: Date
+    },
+
     continuity: {
       type: String
     }
@@ -61,7 +65,7 @@ const UserSchema = new schema(
   }
 );
 
-UserSchema.plugin(uniqueValidator, { message: 'This {PATH} is already taken.' });    // Replaces unique errors from the default MongoServerError(E11000) to ValidationError
+UserSchema.plugin(uniqueValidator, { type: '', message: 'This {PATH} is already taken.' });    // Replaces unique errors from the default MongoServerError(E11000) to ValidationError
 
 const User = mongoose.model("User", UserSchema);
 

@@ -15,5 +15,7 @@ router.route("/lock/:eID").post([authJwt.verifyToken, authJwt.isAdmin],userContr
 router.route("/authJwt").post(authJwt.verifyToken, authJwt.isAdmin, authJwt.authResponse);
 router.route("/signInLogs").post([authJwt.verifyToken, authJwt.isAdmin],userController.findAllSignInLog);
 router.route("/accessLogs").post([authJwt.verifyToken, authJwt.isAdmin],userController.findAllAccessLog);
+router.route("/updatePasswordComplexity").put([authJwt.verifyToken, authJwt.isAdmin],userController.updatePasswordComplexity);
+router.route("/passwordComplexity").post(userController.retrievePasswordComplexity);    //for some reason get requests are not excepted
 
 module.exports = router;
