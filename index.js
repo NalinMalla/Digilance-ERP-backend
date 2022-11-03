@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const usersRouter = require("./routes/users");
+const organizationsRouter = require("./routes/organization");
+const bodyParser = require('body-parser');
 
 require("dotenv").config();   //The dotenv file has our environmental variables
 
@@ -13,10 +15,11 @@ let logNo = 0;
 //  Middleware
 app.use(cors());
 app.use(express.json()); 
+// app.use(bodyParser.urlencoded());
 
 app.use("/users", usersRouter);
-
-app.use("/uploads", express.static("uploads")); //ignores /uploads in url
+app.use("/org", organizationsRouter);
+app.use("/uploads", express.static("uploads")); //allows /uploads in url to access uploads folder
 
 //  Connect to MongoDB database.
 const ATLAS_URI = "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.5.0";
