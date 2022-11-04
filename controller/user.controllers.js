@@ -99,7 +99,6 @@ const deleteUser = (req, res) => {
 };
 
 //User login modules
-
 const logUserSignIn = (user, error, clientIP) => {
   let eID = null;
   let userName = null;
@@ -222,11 +221,11 @@ const login = async (req, res, next) => {
 
 const userLockCheck = (user) => {
   if (user.lock) {
-    if (user.lockPeriod) {
-      let lockPeriodTimestamp = Date.parse(user.lockPeriod); //Converting date to timestamp for comparison
-
+    if (user.lockPeriod.end) {
+      //Converting date to timestamp for comparison
+      let lockEndTimestamp = Date.parse(user.lockPeriod.end);
       //Comparing lockPeriod timestamp to current timestamp
-      if (lockPeriodTimestamp <= Date.now()) {
+      if (lockEndTimestamp <= Date.now()) {
         //Creating user defined req & res for compatibility with unlockUserByID(req, res)
         let req = { params: { eID: user.eID } };
         let res = {
@@ -240,6 +239,26 @@ const userLockCheck = (user) => {
     }
     return true;
   } else {
+    if (user.lockPeriod.start) {
+      let lockStartTimestamp = Date.parse(user.lockPeriod.start);
+      if (lockStartTimestamp <= Date.now()) {
+        //Creating user defined req & res for compatibility with unlockUserByID(req, res)
+        let req = {
+          params: { eID: user.eID },
+          body: {
+            lockStartPeriod: user.lockPeriod.start,
+            lockEndPeriod: user.lockPeriod.end,
+          },
+        };
+        let res = {
+          json: (msg) => {
+            console.log(msg);
+          },
+        };
+        lockUserByID(req, res);
+        return true;
+      }
+    }
     return false;
   }
 };
@@ -266,9 +285,23 @@ const unlockUserByID = (req, res) => {
 const lockUserByID = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then((user) => {
-      user.lock = true;
-      if (req.body.lockPeriod) {
-        user.lockPeriod = new Date(req.body.lockPeriod);
+      if (req.body.lockEndPeriod) {
+        user.lockPeriod.end = new Date(req.body.lockEndPeriod);
+        if (req.body.lockStartPeriod) {
+          user.lockPeriod.start = new Date(req.body.lockStartPeriod);
+          let lockStartTimestamp = Date.parse(user.lockPeriod.start);
+
+          if (lockStartTimestamp <= Date.now()) {
+            user.lock = true;
+          } else {
+            user.lock = false;
+          }
+        } else {
+          user.lockPeriod.start = new Date();
+          user.lock = true;
+        }
+      } else {
+        user.lock = true;
       }
 
       user
@@ -276,7 +309,7 @@ const lockUserByID = (req, res) => {
         .then(() =>
           res.json({
             success: true,
-            message: `User ${req.params.eID} account has been locked.`,
+            message: `Lock has been set for User ${req.params.eID}.`,
           })
         )
         .catch((err) => res.json(err));
@@ -285,7 +318,6 @@ const lockUserByID = (req, res) => {
 };
 
 //User Logs modules
-
 const findAllSignInLog = (req, res) => {
   SignInLog.find()
     .then((log) => res.json(log))
@@ -299,7 +331,6 @@ const findAllAccessLog = (req, res) => {
 };
 
 //User password complexity controls
-
 const updatePasswordComplexity = (req, res) => {
   PasswordComplexity.findOne()
     .then((passwordComplexity) => {

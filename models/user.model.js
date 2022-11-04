@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-let uniqueValidator = require('mongoose-unique-validator');
+let uniqueValidator = require("mongoose-unique-validator");
 
 const schema = mongoose.Schema;
 
@@ -8,7 +8,7 @@ const UserSchema = new schema(
     eID: {
       type: Number,
       required: [true, "Employee ID is mandatory."],
-      unique: true
+      unique: true,
     },
 
     name: {
@@ -44,7 +44,7 @@ const UserSchema = new schema(
 
     countLoginMistakes: {
       type: Number,
-      default: 0
+      default: 0,
     },
 
     lock: {
@@ -53,19 +53,23 @@ const UserSchema = new schema(
     },
 
     lockPeriod: {
-      type: Date
+      start: { type: Date },
+      end: { type: Date },
     },
 
     continuity: {
-      type: String
-    }
+      type: String,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-UserSchema.plugin(uniqueValidator, { type: '', message: 'This {PATH} is already taken.' });    // Replaces unique errors from the default MongoServerError(E11000) to ValidationError
+UserSchema.plugin(uniqueValidator, {
+  type: "",
+  message: "This {PATH} is already taken.",
+}); // Replaces unique errors from the default MongoServerError(E11000) to ValidationError
 
 const User = mongoose.model("User", UserSchema);
 
