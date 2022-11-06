@@ -4,6 +4,7 @@ const multer = require("multer");
 const authJwt = require("../middleWares/authJwt");
 const organizationController = require("../controller/organization.controllers");
 
+//Required for storing image in the backend
 const Storage = multer.diskStorage({
   destination: function (req, file, callback) {
     callback(null, "uploads");
