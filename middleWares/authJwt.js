@@ -58,13 +58,17 @@ const verifyToken = (req, res, next) => {
         req.originalUrl,
         false
       );
-      return res.status(403).send({ error: "No token provided!" });
+      return res
+        .status(403)
+        .send({ errors: true, message: "No token provided!" });
     }
 
     jwt.verify(token, "secretkeyappearshere", (err, decoded) => {
       if (err) {
         logUserAccess(null, "Invalid Token", clientIP, req.originalUrl, false);
-        return res.status(401).send({ error: "Invalid Token!" });
+        return res
+          .status(401)
+          .send({ errors: true, message: "Invalid Token!" });
       }
       req.eID = decoded.eID;
       req.validToken = true;
@@ -73,7 +77,10 @@ const verifyToken = (req, res, next) => {
   } else {
     return res
       .status(400)
-      .send({ error: "Authorization Token is required for this request!" });
+      .send({
+        errors: true,
+        message: "Authorization Token is required for this request!",
+      });
   }
 };
 
@@ -82,7 +89,7 @@ const isAdmin = (req, res, next) => {
     let clientIP =
       req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
     if (err) {
-      res.status(500).send({ error: err });
+      res.status(500).send(err);
       logUserAccess(
         user,
         err,
@@ -94,10 +101,8 @@ const isAdmin = (req, res, next) => {
       return;
     }
 
-    // console.log(user.privilege);
-
     if (user.privilege !== "Admin") {
-      res.status(403).send({ error: "Admin privilege is required!" });
+      res.status(403).send({ errors: true, message: "Admin privilege is required!" });
       logUserAccess(
         user,
         "Admin privilege is required!",
@@ -118,45 +123,43 @@ const isAdmin = (req, res, next) => {
   });
 };
 
-// const accessGrant = (res, req, next) => {
-//   // let af = JSON.parse(req);
-//   console.log(req);
-//   let user = {
-//     eID: req.eID,
-//     userName: req.userName,
-//     privilege: req.privilege
-//   }
-//   console.log(user);
-//   logUserAccess(
-//     user,
-//     null,
-//     req.clientIP,
-//     req.originalUrl,
-//     req.validToken,
-//     req.validPrivilege
-//   );
-//   next();
-//   return;
-// };
+const accessGrant = (req, res, next) => {
+  let user = {
+    eID: req.eID,
+    userName: req.userName,
+    privilege: req.privilege,
+  };
+  console.log(user);
+  logUserAccess(
+    user,
+    null,
+    req.clientIP,
+    req.originalUrl,
+    req.validToken,
+    req.validPrivilege
+  );
+  next();
+  return;
+};
 
 const authResponse = (req, res) => {
   User.findOne({ eID: req.eID }).exec((err, user) => {
     if (err) {
-      res.status(500).send({ error: err });
+      res.status(500).send(err);
       return;
     }
 
     if (!user) {
-      return res.status(400).send({ error: "User doesn't exist!" });
+      return res.status(400).send({ errors: true, message: "User doesn't exist!" });
     }
-    return res.status(200).send({ success: true });
+    return res.status(200).send({ success: true, message: "Owner of this token is a valid user." });
   });
 };
 
 const authJwt = {
   verifyToken,
   isAdmin,
-  // accessGrant,
+  accessGrant,
   authResponse,
 };
 
