@@ -103,10 +103,12 @@ const logUserSignIn = (user, error, clientIP) => {
   let eID = null;
   let userName = null;
   let privilege = null;
+  let continuity = null;
   if (user) {
     eID = user.eID;
     userName = user.userName;
     privilege = user.privilege;
+    continuity = user.continuity;
     if (error) {
       User.findOne({ eID: eID })
         .then((user) => {
@@ -123,8 +125,10 @@ const logUserSignIn = (user, error, clientIP) => {
         })
         .catch((err) => console.log(err));
     } else {
+      continuity = null;
       User.findOne({ eID: eID })
         .then((user) => {
+          user.continuity = null;
           user.countLoginMistakes = 0;
           user.lock = false;
           user
@@ -133,8 +137,10 @@ const logUserSignIn = (user, error, clientIP) => {
             .catch((err) => console.log(err));
         })
         .catch((err) => console.log(err));
+
     }
   }
+  console.log("continuity:"+continuity);
   const userSignInLog = new SignInLog({
     eID: eID,
     userName: userName,
@@ -142,6 +148,7 @@ const logUserSignIn = (user, error, clientIP) => {
     errorCode: error,
     remarks: error ? "Unsuccessful Login" : "Successful Login",
     loggingIP: clientIP,
+    continuity: continuity
   });
 
   userSignInLog
@@ -269,6 +276,7 @@ const unlockUserByID = (req, res) => {
       user.countLoginMistakes = 0;
       user.lock = false;
       user.lockPeriod = null;
+      user.continuity = null;
       user
         .save()
         .then(() =>
@@ -300,8 +308,14 @@ const lockUserByID = (req, res) => {
           user.lockPeriod.start = new Date();
           user.lock = true;
         }
+        if(req.body.continuity){
+          user.continuity = req.body.continuity;
+        }
       } else {
         user.lock = true;
+        if(req.body.continuity){
+          user.continuity = req.body.continuity;
+        }
       }
 
       user

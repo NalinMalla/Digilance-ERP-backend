@@ -25,7 +25,7 @@ const UserSignInLogSchema = new schema(
       required: [true, "Users IP address is required"]
     },
 
-    continuityField: {
+    continuity: {
       type: String
     },
 

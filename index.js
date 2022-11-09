@@ -3,7 +3,6 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const usersRouter = require("./routes/users");
 const organizationsRouter = require("./routes/organization");
-const bodyParser = require('body-parser');
 
 require("dotenv").config();   //The dotenv file has our environmental variables
 
@@ -15,7 +14,6 @@ let logNo = 0;
 //  Middleware
 app.use(cors());
 app.use(express.json()); 
-// app.use(bodyParser.urlencoded());
 
 app.use("/users", usersRouter);
 app.use("/org", organizationsRouter);
