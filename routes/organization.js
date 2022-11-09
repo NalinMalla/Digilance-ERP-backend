@@ -27,7 +27,7 @@ router.route("/").get(organizationController.getOrganizationInfo);
 router
   .route("/update")
   .put(
-    [authJwt.verifyToken, authJwt.isAdmin],
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
     upload.single("logo"),
     organizationController.updateOrganizationInfo
   );

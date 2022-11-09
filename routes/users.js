@@ -11,7 +11,9 @@ router
   .route("/add")
   .post([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.createUser);
 
-router.route("/:eID").get(userController.findUserByEID);
+router.route("/:eID").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.findUserByEID);
+
+router.route("/:eID/getInfo").get([authJwt.verifyToken, authJwt.selfVerification, authJwt.accessGrant], userController.findUserByEID);
 
 router
   .route("/update/:eID")

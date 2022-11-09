@@ -123,6 +123,45 @@ const isAdmin = (req, res, next) => {
   });
 };
 
+const selfVerification = (req, res, next) => {
+  User.findOne({ eID: req.eID }).exec((err, user) => {
+    let clientIP =
+      req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
+    if (err) {
+      res.status(500).send(err);
+      logUserAccess(
+        user,
+        err,
+        clientIP,
+        req.originalUrl,
+        req.validToken,
+        false
+      );
+      return;
+    }
+    
+    if (req.params.eID != req.eID) {
+      res.status(403).send({ errors: true, message: "Users cannot access other user's data!" });
+      logUserAccess(
+        user,
+        "Users cannot access other user's data!",
+        clientIP,
+        req.originalUrl,
+        req.validToken,
+        false
+      );
+      return;
+    }
+    req.validPrivilege = true;
+    req.eID = user.eID;
+    req.userName = user.userName;
+    req.privilege = user.privilege;
+    req.clientIP = clientIP;
+    next();
+    return;
+  });
+};
+
 const accessGrant = (req, res, next) => {
   let user = {
     eID: req.eID,
@@ -160,6 +199,7 @@ const authJwt = {
   verifyToken,
   isAdmin,
   accessGrant,
+  selfVerification,
   authResponse,
 };
 
