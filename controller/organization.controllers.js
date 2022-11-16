@@ -3,37 +3,53 @@ let Organization = require("../models/organization.model");
 const updateOrganizationInfo = (req, res) => {
   Organization.findOne()
     .then((organization) => {
+      let taxClearDate = req.body.taxClearDate;
       if (organization) {
         organization.name = req.body.name;
         organization.address = req.body.address;
-        organization.email = req.body.email;
-        organization.contactNo = req.body.contactNo;
-        organization.faxNo = req.body.faxNo;
-        organization.poBoxNo = req.body.poBoxNo;
-
-        if (req.file !== undefined) {
-          organization.logo = req.file.path;
-        } 
-        else {
-          organization.logo = organization.logo;
-        }
-      } 
-      else {
-        let logo = null;
-        if (req.file) {
-          logo = req.file.path;
-        } 
+        organization.slogan = req.body.slogan;
+        organization.pan.number = req.body.panNumber;
+      } else {
         organization = new Organization({
           name: req.body.name,
           address: req.body.address,
-          email: req.body.email,
-          contactNo: req.body.contactNo,
-          faxNo: req.body.faxNo,
-          poBoxNo: req.body.poBoxNo,
-          logo: logo
+          slogan: req.body.slogan,
+          pan: { number: req.body.panNumber },
         });
       }
-      organization.save()
+
+      Object.values(req.files).forEach((val) => {   //Here, val stores a file sent in each iteration 
+        let index = val[0].fieldname;   //fieldname is the name of the input field in the frontend
+        console.log("Request file: ");
+        console.log(val[0]);
+        if (index == "logo") {
+          organization.logo = val[0].path;
+        }
+        if (index == "registerCert") {
+          organization.registerCert = val[0].path;
+        }
+        if (index == "panCert") {
+          organization.pan.picture = val[0].path;
+        }
+        if (index == "taxClearCert" && taxClearDate) {
+          organization.taxClearCert = [
+            ...organization.taxClearCert,
+            { date: Date.parse(req.body.taxClearDate), picture: val[0].path},
+          ];
+        }
+        if (index == "mou") {
+          organization.mou = val[0].path;
+        }
+        if (index == "moa") {
+          organization.moa = val[0].path;
+        }
+        if (index == "orgChart") {
+          organization.orgChart = val[0].path;
+        }
+      });
+
+      organization
+        .save()
         .then(() =>
           res.json({
             success: true,

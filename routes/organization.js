@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const multer = require("multer");
+let path = require("path");
 
 const authJwt = require("../middleWares/authJwt");
 const organizationController = require("../controller/organization.controllers");
@@ -20,17 +21,33 @@ const Storage = multer.diskStorage({
 
 const upload = multer({
   storage: Storage,
-  // limits:{fileSize: 1024*1024*16}
+  limits: { fileSize: 1000000 }, //In bytes, so its currently set to 1MB
+  fileFilter: function (req, file, callback) {
+    var ext = path.extname(file.originalname);
+    if (ext !== ".png" && ext !== ".jpg" && ext !== ".gif" && ext !== ".jpeg"&& ext !== ".txt") {
+      return callback(new Error("Only images are allowed"));
+    }
+    callback(null, true);
+  },
 });
+
+const uploadName = [
+  { name: "logo", maxCount: 1 },
+  { name: "registerCert", maxCount: 1 },
+  { name: "panCert", maxCount: 1 },
+  { name: "taxClearCert", maxCount: 1 },
+  { name: "mou", maxCount: 1 },
+  { name: "moa", maxCount: 1 },
+  { name: "orgChart", maxCount: 1 },
+];
 
 router.route("/").get(organizationController.getOrganizationInfo);
 router
   .route("/update")
   .put(
     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
-    upload.single("logo"),
+    upload.fields(uploadName),
     organizationController.updateOrganizationInfo
   );
-// router.route("/passwordComplexity").post(organizationController.retrievePasswordComplexity);    //for some reason get requests are not excepted
 
 module.exports = router;
