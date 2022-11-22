@@ -1,7 +1,7 @@
 const router = require("express").Router();
 // const multer = require("multer");
 // let path = require("path");
-const mongodb = require('mongodb')
+const mongodb = require('mongodb');
 
 const authJwt = require("../middleWares/authJwt");
 const organizationController = require("../controller/organization.controllers");
@@ -48,7 +48,14 @@ const organizationController = require("../controller/organization.controllers")
 //   { name: "orgChart", maxCount: 1 },
 // ];
 
-router.route("/").get(organizationController.getOrganizationInfo);
+router.route("/:orgID").get(organizationController.getOrganizationInfo);
+
+router
+  .route("/create")
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    organizationController.createOrganization
+  );
 
 // router
 //   .route("/update")
@@ -59,14 +66,14 @@ router.route("/").get(organizationController.getOrganizationInfo);
 //   );
 
 router
-  .route("/update")
+  .route("/update/:orgID")
   .put(
     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
     organizationController.updateOrganizationInfo
   );
 
 router
-  .route("/delete/:field")
+  .route("/delete/:orgID")
   .put(
     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
     organizationController.deleteOrganizationInfo

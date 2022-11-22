@@ -6,7 +6,7 @@ let Branch = require("../models/branch.model");
 
 const createBranch = (req, res) => {
   let branch = new Branch({
-    name: req.body.name,
+    
     countryCode: req.body.countryCode,
     stateCode: req.body.stateCode,
     cityCode: req.body.cityCode,

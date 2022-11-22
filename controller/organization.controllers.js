@@ -4,25 +4,67 @@ const binary = mongodb.Binary;
 
 let Organization = require("../models/organization.model");
 
-const updateOrganizationInfo = (req, res) => {
-  Organization.findOne()
-    .then((organization) => {
-      console.log("Update Org");
-      let taxClearDate = req.body.taxClearDate;
-      if (organization) {
-        organization.name = req.body.name;
-        organization.address = req.body.address;
-        organization.slogan = req.body.slogan;
-        organization.pan.number = req.body.panNumber;
-        
-      } else {
-        organization = new Organization({
-          name: req.body.name,
-          address: req.body.address,
-          slogan: req.body.slogan,
-          pan: { number: req.body.panNumber },
-        });
+const createOrganization = (req, res) => {
+  let taxClearDate = req.body.taxClearDate;
+  let organization = new Organization({
+    orgID: req.body.orgID,
+    name: req.body.name,
+    slogan: req.body.slogan,
+    pan: { number: req.body.panNumber },
+  });
+
+  if (req.files.logo) {
+    organization.logo = binary(req.files.logo.data);
+  }
+  if (req.files.registerCert) {
+    organization.registerCert = binary(req.files.registerCert.data);
+  }
+  if (req.files.panCert) {
+    organization.pan.picture = binary(req.files.panCert.data);
+  }
+  if (req.files.taxClearCert && taxClearDate) {
+    organization.taxClearCert = [
+      {
+        date: Date.parse(req.body.taxClearDate),
+        picture: binary(req.files.taxClearCert.data),
       }
+    ];
+  }
+  if (req.files.mou) {
+    organization.mou = binary(req.files.mou.data);
+  }
+  if (req.files.moa) {
+    organization.moa = binary(req.files.moa.data);
+  }
+  if (req.files.orgChart) {
+    organization.orgChart = binary(req.files.orgChart.data);
+  }
+
+  organization
+        .save()
+        .then(() =>
+          res.json({
+            success: true,
+            message: `${req.body.name} has been enlisted as an organization.`,
+          })
+        )
+        .catch((err) => res.json(err));
+};
+
+const updateOrganizationInfo = (req, res) => {
+  Organization.findOne({ orgID: req.params.orgID })
+    .then((organization) => {
+      let taxClearDate = req.body.taxClearDate;
+      if(req.body.orgID)
+      {
+        organization.orgID = req.body.orgID;
+      }
+      if(req.body.name)
+      {
+        organization.name = req.body.name;
+      }
+      organization.slogan = req.body.slogan;
+      organization.pan.number = req.body.panNumber;
 
       if (req.files.logo) {
         organization.logo = binary(req.files.logo.data);
@@ -36,7 +78,10 @@ const updateOrganizationInfo = (req, res) => {
       if (req.files.taxClearCert && taxClearDate) {
         organization.taxClearCert = [
           ...organization.taxClearCert,
-          { date: Date.parse(req.body.taxClearDate), picture: binary(req.files.taxClearCert.data) },
+          {
+            date: Date.parse(req.body.taxClearDate),
+            picture: binary(req.files.taxClearCert.data),
+          },
         ];
       }
       if (req.files.mou) {
@@ -83,7 +128,7 @@ const updateOrganizationInfo = (req, res) => {
         .then(() =>
           res.json({
             success: true,
-            message: `Organizational information has been updated.`,
+            message: `${req.params.orgID} organizational information has been updated.`,
           })
         )
         .catch((err) => res.json(err));
@@ -92,7 +137,7 @@ const updateOrganizationInfo = (req, res) => {
 };
 
 const getOrganizationInfo = (req, res) => {
-  Organization.findOne()
+  Organization.findOne({orgID: req.params.orgID})
     .then((org) => {
       // fs.writeFileSync("uploadedImage.jpg", org.logo);
       res.json(org);
@@ -101,16 +146,17 @@ const getOrganizationInfo = (req, res) => {
 };
 
 const deleteOrganizationInfo = (req, res) => {
-  Organization.deleteOne()
+  Organization.deleteOne({orgID: req.params.orgID})
     .then(() =>
       res.json({
         success: true,
-        message: `Organization with eID:${req.params.eID} deleted.`,
+        message: `Organization with orgID:${req.params.orgID} deleted.`,
       })
     )
     .catch((err) => res.status(400).json(err));
 };
 
+exports.createOrganization = createOrganization;
 exports.updateOrganizationInfo = updateOrganizationInfo;
 exports.getOrganizationInfo = getOrganizationInfo;
 exports.deleteOrganizationInfo = deleteOrganizationInfo;
