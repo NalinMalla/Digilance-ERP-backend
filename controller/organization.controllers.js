@@ -145,6 +145,29 @@ const getOrganizationInfo = (req, res) => {
     .catch((err) => res.status(400).json(err));
 };
 
+const getOrganizationBasicInfo = (req, res) => {
+  Organization.findOne({orgID: req.params.orgID})
+    .then((org) => {
+      // fs.writeFileSync("uploadedImage.jpg", org.logo);
+      res.json({
+        orgID: org.orgID,
+        name: org.name,
+        logo: org.logo,
+        branch: org.branch
+      });
+    })
+    .catch((err) => res.status(400).json(err));
+};
+
+const getOrganizationBranchInfo = (orgID) => {
+  Organization.findOne({orgID: orgID})
+    .then((org) => {
+      // fs.writeFileSync("uploadedImage.jpg", org.logo);
+      return org.branch;
+    })
+    .catch((err) => err);
+};
+
 const deleteOrganizationInfo = (req, res) => {
   Organization.deleteOne({orgID: req.params.orgID})
     .then(() =>
@@ -160,3 +183,5 @@ exports.createOrganization = createOrganization;
 exports.updateOrganizationInfo = updateOrganizationInfo;
 exports.getOrganizationInfo = getOrganizationInfo;
 exports.deleteOrganizationInfo = deleteOrganizationInfo;
+exports.getOrganizationBasicInfo = getOrganizationBasicInfo;
+exports.getOrganizationBranchInfo = getOrganizationBranchInfo;

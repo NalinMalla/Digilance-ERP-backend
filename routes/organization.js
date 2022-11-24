@@ -48,7 +48,8 @@ const organizationController = require("../controller/organization.controllers")
 //   { name: "orgChart", maxCount: 1 },
 // ];
 
-router.route("/:orgID").get(organizationController.getOrganizationInfo);
+router.route("/all/:orgID").get(organizationController.getOrganizationInfo);
+router.route("/:orgID").get(organizationController.getOrganizationBasicInfo);
 
 router
   .route("/create")

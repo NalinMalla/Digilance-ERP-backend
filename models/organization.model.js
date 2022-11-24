@@ -24,7 +24,7 @@ const OrganizationSchema = new schema(
     mou: {type: Buffer},    //Memorandum of Understanding, which doesn't need to be legally binding
     moa: {type: Buffer},    //Memorandum of Agreement, which needs to be legally enforced
     orgChart: {type: Buffer},   //Shows the hierarchical structure of a company
-    branch: { type: schema.Types.ObjectId },     //Shows the hierarchical structure of a company
+    branchID: { type: String },     //Shows the hierarchical structure of a company
   },
   {
     timestamps: true,

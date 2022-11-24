@@ -3,24 +3,151 @@ const State = require("country-state-city").State;
 const City = require("country-state-city").City;
 
 let Branch = require("../models/branch.model");
+let Organization = require("../models/organization.model");
 
-const createBranch = (req, res) => {
+const createRootBranch = (req, res) => {
+  let branchID;
+
+  branchID =
+    "" +
+    0 +
+    "-" +
+    req.body.countryCode +
+    "-" +
+    req.body.stateCode +
+    "-" +
+    req.body.city;
+
   let branch = new Branch({
-    
+    branchID: branchID,
+    orgID: req.body.orgID,
     countryCode: req.body.countryCode,
     stateCode: req.body.stateCode,
-    cityCode: req.body.cityCode,
+    city: req.body.city,
+    level: 0,
+    address: req.body.address,
+    email: req.body.email,
+    contactNo: req.body.contactNo,
+    faxNo: req.body.faxNo,
+    poBoxNo: req.body.poBoxNo,
   });
 
   branch
     .save()
-    .then(() =>
-      res.json({
-        success: true,
-        message: `A new branch has been created.`,
-      })
-    )
+    .then(() => {
+      console.log("Branch Data Saved");
+      Organization.findOne({ orgID: req.body.orgID })
+        .then((organization) => {
+          console.log("Found Org");
+          if (!organization.branchID) {
+            organization.branchID = branchID;
+            organization
+              .save()
+              .then(
+                res.json({
+                  success: true,
+                  message: `New Branch created.`,
+                })
+              )
+              .catch((err) => res.json(err));
+          }
+        })
+        .catch((err) => res.json(err));
+    })
     .catch((err) => res.json(err));
+};
+
+const createBranch = (req, res) => {
+  let level, branchID;
+
+  Branch.findOne({ branchID: req.body.parentBranchID })
+    .then((parentBranch) => {
+      console.log("Found Parent Branch");
+      console.log(parentBranch);
+      level = parentBranch.level + 1;
+      return parentBranch;
+    })
+    .then(async (parentBranch) => {
+      console.log(typeof level);
+      if (req.body.idPostfix) {
+        //Incase there is more than one branch of the same level in the same city
+        branchID =
+          "" +
+          level +
+          "-" +
+          req.body.countryCode +
+          "-" +
+          req.body.stateCode +
+          "-" +
+          req.body.city +
+          "-" +
+          req.body.idPostfix;
+      } else {
+        branchID =
+          "" +
+          level +
+          "-" +
+          req.body.countryCode +
+          "-" +
+          req.body.stateCode +
+          "-" +
+          req.body.city;
+      }
+      let branch = new Branch({
+        branchID: branchID,
+        orgID: req.body.orgID,
+        countryCode: req.body.countryCode,
+        stateCode: req.body.stateCode,
+        city: req.body.city,
+        level: level,
+        address: req.body.address,
+        email: req.body.email,
+        contactNo: req.body.contactNo,
+        faxNo: req.body.faxNo,
+        poBoxNo: req.body.poBoxNo,
+      });
+      console.log(branch);
+      let save = await branch
+        .save()
+        .then(() => {
+          console.log("Branch Data Saved");
+          console.log(parentBranch);
+          return "success";
+        })
+        .catch((err) => err);
+
+      if (save === "success") {
+        return parentBranch;
+      }
+    })
+    .then((parentBranch) => {
+      console.log("Set Parent Branch Data");
+      console.log(parentBranch);
+      parentBranch.childBranchIDs = [...parentBranch.childBranchIDs, branchID];
+
+      parentBranch
+        .save()
+        .then(() => {
+          return Organization.findOne({ orgID: req.body.orgID })
+            .then((organization) => {
+              console.log("Found Org");
+              if (!organization.branchID) {
+                organization.branchID = branchID;
+                return organization
+                  .save()
+                  .then(() =>
+                    res.json({
+                      success: true,
+                      message: `Branch successfully created.`,
+                    })
+                  )
+                  .catch((err) => res.json(err));
+              }
+            })
+            .catch((err) => res.json(err));
+        })
+        .catch((err) => res.json(err));
+    });
 };
 
 const updateBranchInfo = (req, res) => {
@@ -83,8 +210,10 @@ const getAllCities = (req, res) => {
 
 const getCitiesOfState = (req, res) => {
   console.log(req.params.stateCode);
-  console.log(City.getCitiesOfState(req.params.countryCode,req.params.stateCode));
-  res.json(City.getCitiesOfState(req.params.countryCode,req.params.stateCode));
+  console.log(
+    City.getCitiesOfState(req.params.countryCode, req.params.stateCode)
+  );
+  res.json(City.getCitiesOfState(req.params.countryCode, req.params.stateCode));
 };
 
 const getCitiesOfCountry = (req, res) => {
@@ -94,6 +223,7 @@ const getCitiesOfCountry = (req, res) => {
 };
 
 exports.createBranch = createBranch;
+exports.createRootBranch = createRootBranch;
 exports.updateBranchInfo = updateBranchInfo;
 exports.getBranchInfoByName = getBranchInfoByName;
 exports.deleteBranch = deleteBranch;
