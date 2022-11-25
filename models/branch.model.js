@@ -23,6 +23,8 @@ const BranchSchema = new schema(
     faxNo: { type: String },
     poBoxNo: { type: String },
     level: { type: Number, required: [true, "Branch Level is mandatory"] }, //Set by the system by comparing to the parentBranch level eventually leading to the root branch whose level 0
+    departments: [{name: {type: String}, depID: {type:String}}],
+    branchHead: {type: String}
   },
   {
     timestamps: true,

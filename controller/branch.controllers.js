@@ -30,6 +30,8 @@ const createRootBranch = (req, res) => {
     contactNo: req.body.contactNo,
     faxNo: req.body.faxNo,
     poBoxNo: req.body.poBoxNo,
+    departments: req.body.departments,
+    branchHead: req.body.branchHead
   });
 
   branch
@@ -105,6 +107,8 @@ const createBranch = (req, res) => {
         contactNo: req.body.contactNo,
         faxNo: req.body.faxNo,
         poBoxNo: req.body.poBoxNo,
+        departments: req.body.departments,
+        branchHead: req.body.branchHead
       });
       console.log(branch);
       let save = await branch
@@ -120,33 +124,37 @@ const createBranch = (req, res) => {
         return parentBranch;
       }
     })
-    .then((parentBranch) => {
+    .then(async (parentBranch) => {
       console.log("Set Parent Branch Data");
       console.log(parentBranch);
       parentBranch.childBranchIDs = [...parentBranch.childBranchIDs, branchID];
 
-      parentBranch
+      await parentBranch
         .save()
-        .then(() => {
-          return Organization.findOne({ orgID: req.body.orgID })
-            .then((organization) => {
+        .then(async () => {
+          await Organization.findOne({ orgID: req.body.orgID })
+            .then(async (organization) => {
               console.log("Found Org");
               if (!organization.branchID) {
                 organization.branchID = branchID;
-                return organization
+                await organization
                   .save()
-                  .then(() =>
-                    res.json({
-                      success: true,
-                      message: `Branch successfully created.`,
-                    })
-                  )
+                  .then()
                   .catch((err) => res.json(err));
               }
+              console.log("returning from org found");
+              return;
             })
             .catch((err) => res.json(err));
+          console.log("returning from parent branch alter");
+          return;
         })
         .catch((err) => res.json(err));
+      console.log("returning res");
+      return res.json({
+        success: true,
+        message: `Branch successfully created.`,
+      });
     });
 };
 
