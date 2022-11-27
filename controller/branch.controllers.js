@@ -31,7 +31,7 @@ const createRootBranch = (req, res) => {
     faxNo: req.body.faxNo,
     poBoxNo: req.body.poBoxNo,
     departments: req.body.departments,
-    branchHead: req.body.branchHead
+    branchHead: req.body.branchHead,
   });
 
   branch
@@ -60,17 +60,28 @@ const createRootBranch = (req, res) => {
 };
 
 const createBranch = (req, res) => {
-  let level, branchID;
+  let level, branchID, error, success;
 
   Branch.findOne({ branchID: req.body.parentBranchID })
-    .then((parentBranch) => {
-      console.log("Found Parent Branch");
-      console.log(parentBranch);
-      level = parentBranch.level + 1;
-      return parentBranch;
-    })
+    .then(
+      (parentBranch) => {
+        if (!parentBranch) {
+          error = `Couldn't find the parent branch.`;
+          return;
+        }
+        level = parentBranch.level + 1;
+        success = `Branch Level was set after verifying with the parent branch; `;
+        return parentBranch;
+      },
+      (err) => {
+        error = err;
+        return;
+      }
+    )
     .then(async (parentBranch) => {
-      console.log(typeof level);
+      if (error) {
+        return;
+      }
       if (req.body.idPostfix) {
         //Incase there is more than one branch of the same level in the same city
         branchID =
@@ -108,53 +119,73 @@ const createBranch = (req, res) => {
         faxNo: req.body.faxNo,
         poBoxNo: req.body.poBoxNo,
         departments: req.body.departments,
-        branchHead: req.body.branchHead
+        branchHead: req.body.branchHead,
+        parentBranchID: req.body.parentBranchID,
       });
-      console.log(branch);
-      let save = await branch
+      await branch
         .save()
         .then(() => {
-          console.log("Branch Data Saved");
-          console.log(parentBranch);
-          return "success";
+          success = `Branch ${branchID} successfully created. ${success}`;
         })
-        .catch((err) => err);
+        .catch((err) => {
+          error = err;
+        });
 
-      if (save === "success") {
+      if (error) {
+        return;
+      } else {
         return parentBranch;
       }
     })
     .then(async (parentBranch) => {
-      console.log("Set Parent Branch Data");
-      console.log(parentBranch);
+      if (error) {
+        return res.json({
+          errors: true,
+          message: error,
+        });
+      }
+
       parentBranch.childBranchIDs = [...parentBranch.childBranchIDs, branchID];
 
       await parentBranch
         .save()
         .then(async () => {
+          success = `${success}Adopted by parent branch ${parentBranch.branchID} as its child; `;
           await Organization.findOne({ orgID: req.body.orgID })
             .then(async (organization) => {
-              console.log("Found Org");
               if (!organization.branchID) {
                 organization.branchID = branchID;
                 await organization
                   .save()
-                  .then()
-                  .catch((err) => res.json(err));
+                  .then(() => {
+                    success = `${success}Added branch information to the organization's records; `;
+                  })
+                  .catch(() => {
+                    error = `Couldn't add branch information to the organization's records.`;
+                  });
               }
-              console.log("returning from org found");
               return;
             })
-            .catch((err) => res.json(err));
-          console.log("returning from parent branch alter");
+            .catch(() => {
+              error = `Couldn't access the branch's organization's records.`;
+            });
           return;
         })
-        .catch((err) => res.json(err));
-      console.log("returning res");
-      return res.json({
-        success: true,
-        message: `Branch successfully created.`,
-      });
+        .catch(() => {
+          error = `Couldn't add branch as child branch of ${parentBranch.branchID}.`;
+        });
+
+      if (error) {
+        return res.json({
+          errors: true,
+          message: error,
+        });
+      } else {
+        return res.json({
+          success: true,
+          message: success,
+        });
+      }
     });
 };
 
@@ -179,21 +210,92 @@ const updateBranchInfo = (req, res) => {
     .catch((err) => res.json(err));
 };
 
-const getBranchInfoByName = (req, res) => {
-  Branch.findOne({ name: req.params.name })
+const getBranchInfo = (req, res) => {
+  Branch.findOne({ branchID: req.params.branchID })
+    .then((branch) => res.json(branch))
+    .catch((err) => res.status(400).json(err));
+};
+
+const getAllBranchInfo = (req, res) => {
+  Branch.find()
     .then((branch) => res.json(branch))
     .catch((err) => res.status(400).json(err));
 };
 
 const deleteBranch = (req, res) => {
-  Branch.deleteOne({ name: req.params.name })
-    .then(() =>
-      res.json({
-        success: true,
-        message: `Branch ${req.params.name} deleted.`,
-      })
-    )
-    .catch((err) => res.status(400).json(err));
+  let error, success;
+  Branch.findOne({ branchID: req.params.branchID })
+    .then(async (branch) => {
+      await Organization.findOne({ orgID: branch.orgID })
+        .then(async (organization) => {
+          if (organization.branchID === req.params.branchID) {
+            organization.branchID = null;
+            await organization
+              .save()
+              .then(async () => {
+                success = `Branch information withing organization ${branch.orgID} was deleted; )`;
+              })
+              .catch(() => {
+                error = `Couldn't delete branch information of organization ${branch.orgID}.`;
+              });
+          }
+          await Branch.findOne({ branchID: branch.parentBranchID })
+            .then(async (parentBranch) => {
+              parentBranch.childBranchIDs = parentBranch.childBranchIDs.filter(
+                (child) => child !== req.params.branchID
+              );
+              await parentBranch
+                .save()
+                .then(() => {
+                  success = `${success} Branch was disowned by its parent; `;
+                })
+                .catch(() => {
+                  error = `Couldn't remove the child status of branch ${req.params.branchID} in its parentBranch.`;
+                });
+            })
+            .catch(() => {
+              error = `Couldn't gain access to branch ${req.params.branchID}'s parent branch.`;
+            });
+          return;
+        })
+        .catch(() => {
+          error = `Couldn't gain access to branch ${req.params.branchID}'s organization records.`;
+          return;
+        });
+    })
+    .then(async () => {
+      if (error) {
+        return;
+      }
+      await Branch.deleteOne({ branchID: req.params.branchID }).then(
+        () => {
+          success = `Branch ${req.params.branchID} deleted. ${success}`;
+        },
+        (err) => {
+          error = err;
+        }
+      );
+      return;
+    })
+    .then(async () => {
+      if (error) {
+        return res.json({ errors: true, message: error });
+      }
+      await Branch.deleteMany({ parentBranchID: req.params.branchID })
+        .then(() => {
+          success = `${success}All children of branch ${req.params.branchID} were deleted;`;
+        })
+        .catch(() => {
+          error = `All children of branch ${req.params.branchID} could not be deleted.`;
+        });
+
+      if (error) {
+        return res.json({ errors: true, message: error });
+      } else {
+        return res.json({ success: true, message: success });
+      }
+    })
+    .catch((err) => res.json(err));
 };
 
 const getAllCountries = (req, res) => {
@@ -233,7 +335,8 @@ const getCitiesOfCountry = (req, res) => {
 exports.createBranch = createBranch;
 exports.createRootBranch = createRootBranch;
 exports.updateBranchInfo = updateBranchInfo;
-exports.getBranchInfoByName = getBranchInfoByName;
+exports.getBranchInfo = getBranchInfo;
+exports.getAllBranchInfo = getAllBranchInfo;
 exports.deleteBranch = deleteBranch;
 exports.getAllCountries = getAllCountries;
 exports.getAllStates = getAllStates;

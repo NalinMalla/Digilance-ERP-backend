@@ -3,7 +3,9 @@ const router = require("express").Router();
 const authJwt = require("../middleWares/authJwt");
 const branchController = require("../controller/branch.controllers");
 
-router.route("/getBranch/:name").get(branchController.getBranchInfoByName);
+router.route("/getBranch/:branchID").get(branchController.getBranchInfo);
+
+router.route("/all").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], branchController.getAllBranchInfo);
 
 router
   .route("/create")
@@ -19,16 +21,16 @@ router
     branchController.createRootBranch
   );
 
-router
-  .route("/update/:name")
-  .put(
-    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
-    branchController.updateBranchInfo
-  );
+// router
+//   .route("/update/:name")
+//   .put(
+//     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+//     branchController.updateBranchInfo
+//   );
 
 router
-  .route("/delete/:name")
-  .put(
+  .route("/delete/:branchID")
+  .delete(
     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
     branchController.deleteBranch
   );
