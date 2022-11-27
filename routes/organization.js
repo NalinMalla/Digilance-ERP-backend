@@ -73,9 +73,16 @@ router
     organizationController.updateOrganizationInfo
   );
 
+  router
+  .route("/update/branch/:orgID")
+  .put(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    organizationController.updateOrganizationBranchInfo
+  );
+
 router
   .route("/delete/:orgID")
-  .put(
+  .delete(
     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
     organizationController.deleteOrganizationInfo
   );

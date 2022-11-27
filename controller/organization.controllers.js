@@ -63,12 +63,16 @@ const updateOrganizationInfo = (req, res) => {
       {
         organization.name = req.body.name;
       }
+
       organization.slogan = req.body.slogan;
       organization.pan.number = req.body.panNumber;
+      organization.branchID = req.body.branchID;
+
 
       if (req.files.logo) {
         organization.logo = binary(req.files.logo.data);
       }
+
       if (req.files.registerCert) {
         organization.registerCert = binary(req.files.registerCert.data);
       }
@@ -93,6 +97,7 @@ const updateOrganizationInfo = (req, res) => {
       if (req.files.orgChart) {
         organization.orgChart = binary(req.files.orgChart.data);
       }
+      console.log("Organization found for update.");
       // Object.values(req.files).forEach((val) => {   //Here, val stores a file sent in each iteration
       //   let index = val[0].fieldname;   //fieldname is the name of the input field in the frontend
       //   console.log("Request file: ");
@@ -122,13 +127,32 @@ const updateOrganizationInfo = (req, res) => {
       //     organization.orgChart = val[0].path;
       //   }
       // });
-
+      console.log("organization.branchID");
+      console.log(organization.branchID);
       organization
         .save()
         .then(() =>
           res.json({
             success: true,
             message: `${req.params.orgID} organizational information has been updated.`,
+          })
+        )
+        .catch((err) => res.json(err));
+    })
+    .catch((err) => res.json(err));
+};
+
+const updateOrganizationBranchInfo = (req, res) => {
+  Organization.findOne({ orgID: req.params.orgID })
+    .then((organization) => {
+      organization.branchID = req.body.branchID;
+
+      organization
+        .save()
+        .then(() =>
+          res.json({
+            success: true,
+            message: `${req.params.orgID} organizational branch information has been updated.`,
           })
         )
         .catch((err) => res.json(err));
@@ -153,19 +177,10 @@ const getOrganizationBasicInfo = (req, res) => {
         orgID: org.orgID,
         name: org.name,
         logo: org.logo,
-        branch: org.branch
+        branchID: org.branchID
       });
     })
     .catch((err) => res.status(400).json(err));
-};
-
-const getOrganizationBranchInfo = (orgID) => {
-  Organization.findOne({orgID: orgID})
-    .then((org) => {
-      // fs.writeFileSync("uploadedImage.jpg", org.logo);
-      return org.branch;
-    })
-    .catch((err) => err);
 };
 
 const deleteOrganizationInfo = (req, res) => {
@@ -184,4 +199,4 @@ exports.updateOrganizationInfo = updateOrganizationInfo;
 exports.getOrganizationInfo = getOrganizationInfo;
 exports.deleteOrganizationInfo = deleteOrganizationInfo;
 exports.getOrganizationBasicInfo = getOrganizationBasicInfo;
-exports.getOrganizationBranchInfo = getOrganizationBranchInfo;
+exports.updateOrganizationBranchInfo = updateOrganizationBranchInfo;
