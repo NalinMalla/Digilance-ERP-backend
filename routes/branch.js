@@ -5,7 +5,12 @@ const branchController = require("../controller/branch.controllers");
 
 router.route("/getBranch/:branchID").get(branchController.getBranchInfo);
 
-router.route("/all").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], branchController.getAllBranchInfo);
+router
+  .route("/all")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    branchController.getAllBranchInfo
+  );
 
 router
   .route("/create")
@@ -21,12 +26,20 @@ router
     branchController.createRootBranch
   );
 
-// router
-//   .route("/update/:name")
-//   .put(
-//     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
-//     branchController.updateBranchInfo
-//   );
+//Will later be changed so that high level user can access
+router
+  .route("/update/basic/:branchID")
+  .put(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    branchController.updateBasicBranchInfo
+  );
+
+router
+  .route("/update/structure/:branchID")
+  .put(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    branchController.updateBranchStructure
+  );
 
 router
   .route("/delete/:branchID")
@@ -50,5 +63,19 @@ router
 router
   .route("/getCitiesOfState/:countryCode/:stateCode")
   .get(branchController.getCitiesOfState);
+
+router
+  .route("/settings/update")
+  .put(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    branchController.updateBranchSettings
+  );
+
+router
+  .route("/settings")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    branchController.getBranchSettings
+  );
 
 module.exports = router;

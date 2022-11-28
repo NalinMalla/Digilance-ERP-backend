@@ -3,20 +3,58 @@ const State = require("country-state-city").State;
 const City = require("country-state-city").City;
 
 let Branch = require("../models/branch.model");
+let BranchSettings = require("../models/branchSettings.model");
 let Organization = require("../models/organization.model");
 
-const createRootBranch = (req, res) => {
+const generateBranchID = async (
+  level,
+  countryCode,
+  stateCode,
+  city,
+  uniqueKey = null
+) => {
   let branchID;
+  let parameter = {
+    level: level,
+    countryCode: countryCode,
+    stateCode: stateCode,
+    city: city,
+    uniqueKey: uniqueKey,
+  };
+  console.log("uniqueKey");
+  console.log(parameter.uniqueKey);
+  await BranchSettings.findOne()
+    .then((branchSettings) => {
+      let count = 4;
+      if (uniqueKey) {
+        count = 5;
+      }
+      for (let i = 0; i < count; i++) {
+        if (i === 0) {
+          branchID = "" + parameter[branchSettings.branchIDFormat[i]];
+        } else {
+          branchID =
+            branchID + "-" + parameter[branchSettings.branchIDFormat[i]];
+        }
+      }
+    })
+    .catch(() => {
+      branchID = "" + level + "-" + countryCode + "-" + stateCode + "-" + city;
+      if (uniqueKey) {
+        branchID = branchID + "-" + uniqueKey;
+      }
+    });
+  console.log("returning branchID");
+  return branchID;
+};
 
-  branchID =
-    "" +
-    0 +
-    "-" +
-    req.body.countryCode +
-    "-" +
-    req.body.stateCode +
-    "-" +
-    req.body.city;
+const createRootBranch = (req, res) => {
+  let branchID = generateBranchID(
+    0,
+    req.body.countryCode,
+    req.body.stateCode,
+    req.body.city
+  );
 
   let branch = new Branch({
     branchID: branchID,
@@ -82,30 +120,15 @@ const createBranch = (req, res) => {
       if (error) {
         return;
       }
-      if (req.body.idPostfix) {
-        //Incase there is more than one branch of the same level in the same city
-        branchID =
-          "" +
-          level +
-          "-" +
-          req.body.countryCode +
-          "-" +
-          req.body.stateCode +
-          "-" +
-          req.body.city +
-          "-" +
-          req.body.idPostfix;
-      } else {
-        branchID =
-          "" +
-          level +
-          "-" +
-          req.body.countryCode +
-          "-" +
-          req.body.stateCode +
-          "-" +
-          req.body.city;
-      }
+      console.log(req.body.uniqueKey);
+      branchID = await generateBranchID(
+        level,
+        req.body.countryCode,
+        req.body.stateCode,
+        req.body.city,
+        req.body.uniqueKey
+      );
+
       let branch = new Branch({
         branchID: branchID,
         orgID: req.body.orgID,
@@ -189,23 +212,190 @@ const createBranch = (req, res) => {
     });
 };
 
-const updateBranchInfo = (req, res) => {
-  Branch.findOne({ name: req.params.name })
+const updateBasicBranchInfo = (req, res) => {
+  Branch.findOne({ branchID: req.params.branchID })
     .then((branch) => {
-      branch.name = req.body.name;
-      branch.countryCode = req.body.countryCode;
-      branch.stateCode = req.body.stateCode;
-      branch.cityCode = req.body.cityCode;
+      branch.address = req.body.address;
+      branch.email = req.body.email;
+      branch.contactNo = req.body.contactNo;
+      branch.faxNo = req.body.faxNo;
+      branch.poBoxNo = req.body.poBoxNo;
+      branch.departments = req.body.departments;
+      branch.branchHead = req.body.branchHead;
+      if (req.body.orgID) {
+        branch.orgID = req.body.orgID;
+      }
 
       branch
         .save()
         .then(() =>
           res.json({
             success: true,
-            message: `Branch information has been updated.`,
+            message: `Basic Branch information has been updated.`,
           })
         )
         .catch((err) => res.json(err));
+    })
+    .catch((err) => res.json(err));
+};
+
+const updateBranchStructure = (req, res) => {
+  let level, error, success, parentBranchID, newParentBranch;
+  Branch.findOne({ branchID: req.params.branchID })
+    .then(async (branch) => {
+      console.log("Found branch to be updated.");
+      console.log(branch);
+      if (!branch) {
+        error = `Couldn't find branch ${req.params.branchID}.`;
+        return;
+      }
+      if (
+        req.body.newParentBranchID &&
+        req.body.newParentBranchID !== branch.parentBranchID
+      ) {
+        console.log("In new Parent Branch");
+        await Branch.findOne({ branchID: req.body.newParentBranchID }).then(
+          (parentBranch) => {
+            if (!parentBranch) {
+              error = `Couldn't find the branch selected for parent.`;
+              return;
+            }
+
+            branch.level = parentBranch.level + 1;
+            success = `Branch Level was set after verifying with the new parent branch; `;
+            newParentBranch = parentBranch;
+            console.log(newParentBranch);
+            return;
+          },
+          (err) => {
+            error = err;
+            return;
+          }
+        );
+      }
+      return branch;
+    })
+    .then(async (branch) => {
+      console.log("Update branch and new parent branch.");
+      if (error) {
+        return;
+      }
+      console.log("Before update Branch data pass error test");
+      console.log(branch);
+      parentBranchID = branch.parentBranchID;
+      console.log("2.Before update Branch data pass error test");
+
+      if (newParentBranch) {
+        branch.parentBranchID = newParentBranch.branchID;
+        // branch.level = level;
+      }
+
+      if (req.body.countryCode && req.body.stateCode && req.body.city) {
+        branch.branchID = await generateBranchID(
+          branch.level,
+          req.body.countryCode,
+          req.body.stateCode,
+          req.body.city,
+          req.body.uniqueKey
+        );
+      }
+      
+      console.log("Update Branch data");
+      await branch
+        .save()
+        .then(() => {
+          success = `Branch ${branch.branchID} was updated. ${success}`;
+        })
+        .catch((err) => {
+          error = err;
+        });
+
+      if (error) {
+        return;
+      }
+
+      console.log("Update Parent Branch data");
+      if (newParentBranch) {
+        newParentBranch.childBranchIDs = [
+          ...newParentBranch.childBranchIDs,
+          branch.branchID,
+        ];
+
+        await newParentBranch
+          .save()
+          .then(() => {
+            success = `${success}Adopted by parent branch ${newParentBranch.branchID} as its child; `;
+          })
+          .catch(() => {
+            error = `Couldn't add branch as child branch of ${newParentBranch.branchID}.`;
+          });
+      }
+      return branch;
+    })
+    .then(async (branch) => {
+      console.log("Update old parent branch.");
+      if (error) {
+        return res.json({
+          errors: true,
+          message: error,
+        });
+      }
+      await Branch.findOne({ branchID: parentBranchID })
+        .then(async (oldParentBranch) => {
+          oldParentBranch.childBranchIDs =
+            oldParentBranch.childBranchIDs.filter(
+              (child) => child !== req.params.branchID
+            );
+
+          if (parentBranchID === branch.parentBranchID) {
+            //Incase of only branchID changed and not the parent branch
+            oldParentBranch.childBranchIDs = [
+              ...oldParentBranch.childBranchIDs,
+              branch.branchID,
+            ];
+          }
+
+          await oldParentBranch
+            .save()
+            .then(() => {
+              success = `${success} Branch's old parent's records were changed; `;
+            })
+            .catch(() => {
+              error = `Couldn't change old parent branch records.`;
+            });
+        })
+        .catch(() => {
+          error = `Couldn't gain access to branch ${req.params.branchID}'s old parent branch.`;
+        });
+
+      return branch;
+    })
+    .then(async (branch) => {
+      console.log("Update child branches.");
+      if (error) {
+        return res.json({ errors: true, message: error });
+      }
+
+      await Branch.find({ parentBranchID: req.params.branchID })
+        .then((childBranch) => {
+          console.log(childBranch);
+          success = `${success}All entries in child branches have been updated;`;
+        })
+        .catch(() => {
+          error = `All entries in child branches could not be updated.`;
+        });
+
+      if (error) {
+        return res.json({
+          errors: true,
+          message: error,
+        });
+      } else {
+        return res.json({
+          success: true,
+          message: success,
+        });
+      }
     })
     .catch((err) => res.json(err));
 };
@@ -332,9 +522,39 @@ const getCitiesOfCountry = (req, res) => {
   res.json(City.getCitiesOfCountry(req.params.countryCode));
 };
 
+const updateBranchSettings = (req, res) => {
+  BranchSettings.findOne()
+    .then((branchSettings) => {
+      if (branchSettings) {
+        branchSettings.branchIDFormat = req.body.branchIDFormat;
+      } else {
+        branchSettings = new BranchSettings({
+          branchIDFormat: req.body.branchIDFormat,
+        });
+      }
+      branchSettings
+        .save()
+        .then(() =>
+          res.json({
+            success: true,
+            message: `Successfully updated branch settings.`,
+          })
+        )
+        .catch((err) => res.json(err));
+    })
+    .catch((err) => res.json(err));
+};
+
+const getBranchSettings = (req, res) => {
+  BranchSettings.findOne()
+    .then((branchSettings) => res.json(branchSettings))
+    .catch((err) => res.json(err));
+};
+
 exports.createBranch = createBranch;
 exports.createRootBranch = createRootBranch;
-exports.updateBranchInfo = updateBranchInfo;
+exports.updateBasicBranchInfo = updateBasicBranchInfo;
+exports.updateBranchStructure = updateBranchStructure;
 exports.getBranchInfo = getBranchInfo;
 exports.getAllBranchInfo = getAllBranchInfo;
 exports.deleteBranch = deleteBranch;
@@ -345,3 +565,5 @@ exports.getCountry = getCountry;
 exports.getStatesOfCountry = getStatesOfCountry;
 exports.getCitiesOfState = getCitiesOfState;
 exports.getCitiesOfCountry = getCitiesOfCountry;
+exports.updateBranchSettings = updateBranchSettings;
+exports.getBranchSettings = getBranchSettings;
