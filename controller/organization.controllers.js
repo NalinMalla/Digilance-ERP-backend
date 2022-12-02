@@ -11,6 +11,7 @@ const createOrganization = (req, res) => {
     name: req.body.name,
     slogan: req.body.slogan,
     pan: { number: req.body.panNumber },
+    vat: { number: req.body.vatNumber },
   });
 
   if (req.files.logo) {
@@ -21,6 +22,9 @@ const createOrganization = (req, res) => {
   }
   if (req.files.panCert) {
     organization.pan.picture = binary(req.files.panCert.data);
+  }
+  if (req.files.vatCert) {
+    organization.vat.picture = binary(req.files.vatCert.data);
   }
   if (req.files.taxClearCert && taxClearDate) {
     organization.taxClearCert = [
@@ -66,6 +70,7 @@ const updateOrganizationInfo = (req, res) => {
 
       organization.slogan = req.body.slogan;
       organization.pan.number = req.body.panNumber;
+      organization.vat.number = req.body.vatNumber;
       organization.branchID = req.body.branchID;
 
 
@@ -78,6 +83,9 @@ const updateOrganizationInfo = (req, res) => {
       }
       if (req.files.panCert) {
         organization.pan.picture = binary(req.files.panCert.data);
+      }
+      if (req.files.vatCert) {
+        organization.vat.picture = binary(req.files.vatCert.data);
       }
       if (req.files.taxClearCert && taxClearDate) {
         organization.taxClearCert = [

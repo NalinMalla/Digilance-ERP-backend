@@ -20,6 +20,10 @@ const OrganizationSchema = new schema(
       picture: { type: Buffer},
       number: { type: String}
     },
+    vat:{
+      picture: { type: Buffer},
+      number: { type: String}
+    },
     taxClearCert: [{date: {type: Date}, picture: {type: Buffer}}],
     mou: {type: Buffer},    //Memorandum of Understanding, which doesn't need to be legally binding
     moa: {type: Buffer},    //Memorandum of Agreement, which needs to be legally enforced
