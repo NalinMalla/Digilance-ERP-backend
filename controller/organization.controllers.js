@@ -7,7 +7,7 @@ let Organization = require("../models/organization.model");
 const createOrganization = (req, res) => {
   console.log("Start Create org");
 
-  let taxClearDate = req.body.taxClearDate;
+  // let taxClearDate = req.body.taxClearDate;
   let organization = new Organization({
     orgID: req.body.orgID,
     name: req.body.name,
@@ -72,11 +72,15 @@ const createOrganization = (req, res) => {
         organization.vat.picture = val[i].path;
       }
 
-      if (index == "taxClearCert" && taxClearDate) {
-        organization.taxClearCert = [
-          ...organization.taxClearCert,
-          { date: Date.parse(req.body.taxClearDate), picture: val[i].path },
-        ];
+      // if (index == "taxClearCert" && taxClearDate) {
+      //   organization.taxClearCert = [
+      //     ...organization.taxClearCert,
+      //     { date: Date.parse(req.body.taxClearDate), picture: val[i].path },
+      //   ];
+      // }
+
+      if (index == "taxClearCert") {
+        organization.taxClearCert = [...organization.taxClearCert, val[i].path];
       }
 
       if (index == "mou") {
@@ -107,8 +111,12 @@ const createOrganization = (req, res) => {
 const updateOrganizationInfo = (req, res) => {
   Organization.findOne({ orgID: req.params.orgID })
     .then((organization) => {
-      let moa, mou, orgChart, registerCert, taxClearCert;
-      let taxClearDate = req.body.taxClearDate;
+      let moa = [],
+        mou = [],
+        orgChart = [],
+        registerCert = [],
+        taxClearCert = [];
+      // let taxClearDate = req.body.taxClearDate;
       if (req.body.orgID) {
         organization.orgID = req.body.orgID;
       }
@@ -170,8 +178,10 @@ const updateOrganizationInfo = (req, res) => {
         console.log(val.length);
 
         for (let i = 0; i < val.length; i++) {
+          console.log("Enter val");
           let index = val[i].fieldname; //fieldname is the name of the input field in the frontend
           console.log(index);
+
           if (index == "logo") {
             organization.logo = val[i].path;
           }
@@ -189,11 +199,18 @@ const updateOrganizationInfo = (req, res) => {
             organization.vat.picture = val[i].path;
           }
 
-          if (index == "taxClearCert" && taxClearDate) {
-            organization.taxClearCert = [
-              ...organization.taxClearCert,
-              { date: Date.parse(req.body.taxClearDate), picture: val[i].path },
-            ];
+          // if (index == "taxClearCert" && taxClearDate) {
+          //   organization.taxClearCert = [
+          //     ...organization.taxClearCert,
+          //     { date: Date.parse(req.body.taxClearDate), picture: val[i].path },
+          //   ];
+          // }
+
+          if (index == "taxClearCert") {
+            console.log("in tax clear");
+            taxClearCert = [...taxClearCert, val[i].path];
+            console.log(taxClearCert);
+            organization.taxClearCert = taxClearCert;
           }
 
           if (index == "mou") {
@@ -207,14 +224,16 @@ const updateOrganizationInfo = (req, res) => {
           }
 
           if (index == "orgChart") {
+            console.log("in orgChart");
+
             orgChart = [...orgChart, val[i].path];
+            console.log(orgChart);
             organization.orgChart = orgChart;
           }
         }
+        console.log("end of val");
       });
 
-      console.log("organization.branchID");
-      console.log(organization.branchID);
       organization
         .save()
         .then(() =>
