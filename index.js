@@ -1,5 +1,5 @@
 const express = require("express");
-const fileUpload = require('express-fileupload');
+// const fileUpload = require('express-fileupload');    //multer will not work with this
 const cors = require("cors");
 const mongoose = require("mongoose");
 const usersRouter = require("./routes/users");
@@ -17,7 +17,7 @@ let logNo = 0;
 //  Middleware
 app.use(cors());
 app.use(express.json());
-app.use(fileUpload()); 
+// app.use(fileUpload()); 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
