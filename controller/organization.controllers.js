@@ -3,6 +3,7 @@ const fs = require("fs");
 const binary = mongodb.Binary;
 
 let Organization = require("../models/organization.model");
+let OrganizationSettings = require("../models/organizationSettings.model");
 
 const createOrganization = (req, res) => {
   console.log("Start Create org");
@@ -279,11 +280,21 @@ const getOrganizationBasicInfo = (req, res) => {
     .then((org) => {
       // fs.writeFileSync("uploadedImage.jpg", org.logo);
       res.json({
+        _id: _id,
         orgID: org.orgID,
         name: org.name,
         logo: org.logo,
         branchID: org.branchID,
       });
+    })
+    .catch((err) => res.status(400).json(err));
+};
+
+const getAllOrganizationInfo = (req, res) => {
+  Organization.find()
+    .then((org) => {
+      // fs.writeFileSync("uploadedImage.jpg", org.logo);
+      res.json(org);
     })
     .catch((err) => res.status(400).json(err));
 };
@@ -299,9 +310,55 @@ const deleteOrganizationInfo = (req, res) => {
     .catch((err) => res.status(400).json(err));
 };
 
+const updateOrganizationSettings = (req, res) => {
+  console.log("in update org setting");
+  OrganizationSettings.findOne()
+    .then((organizationSettings) => {
+      if (organizationSettings) {
+        if (req.body.fileSize) {
+          organizationSettings.fileSize = req.body.fileSize;
+        }
+        if (req.body.validFileExts) {
+          organizationSettings.validFileExtensions = req.body.validFileExts;
+        }
+      } else {
+        organizationSettings = new OrganizationSettings({
+          fileSize: req.body.fileSize,
+          validFileExtensions: req.body.validFileExts,
+        });
+      }
+
+      organizationSettings
+        .save()
+        .then(() =>
+          res.json({
+            success: true,
+            message: `Successfully updated Organization settings.`,
+          })
+        )
+        .catch((err) => res.json(err));
+    })
+    .catch((err) => res.json(err));
+};
+
+const getOrganizationSettings = (req, res) => {
+  OrganizationSettings.findOne()
+    .then((organizationSettings) => {
+      console.log("organizationSettings");
+      console.log(organizationSettings);
+      return res.json(organizationSettings);
+    })
+    .catch((err) => res.json(err));
+};
+
+
+
 exports.createOrganization = createOrganization;
 exports.updateOrganizationInfo = updateOrganizationInfo;
 exports.getOrganizationInfo = getOrganizationInfo;
 exports.deleteOrganizationInfo = deleteOrganizationInfo;
 exports.getOrganizationBasicInfo = getOrganizationBasicInfo;
 exports.updateOrganizationBranchInfo = updateOrganizationBranchInfo;
+exports.updateOrganizationSettings = updateOrganizationSettings;
+exports.getOrganizationSettings = getOrganizationSettings;
+exports.getAllOrganizationInfo = getAllOrganizationInfo;
