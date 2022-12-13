@@ -77,6 +77,18 @@ const findUserByUName = (req, res) => {
     .catch((err) => res.status(400).json(err));
 };
 
+const findUserByName = (req, res) => {
+  User.find({ name: req.params.name })
+    .then((user) =>
+      user === null
+        ? res
+            .status(404)
+            .json({ error: `User with user name ${req.params.userName} does not exist.` })
+        : res.json(user)
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
 const updateUser = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then(async (user) => {
@@ -404,6 +416,7 @@ exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
 exports.findUserByID = findUserByID;
 exports.findUserByUName = findUserByUName;
+exports.findUserByName = findUserByName;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
