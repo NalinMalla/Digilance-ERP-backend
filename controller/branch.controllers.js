@@ -28,17 +28,15 @@ const generateBranchID = async (
   await BranchSettings.findOne()
     .then((branchSettings) => {
       let count = 4;
-      
-      if(vdcCode && uniqueKey){
-        count = 6
-      }
-      else if(vdcCode) {
-        count = 5
-      }
-      else if (uniqueKey) {
+
+      if (vdcCode && uniqueKey) {
+        count = 6;
+      } else if (vdcCode) {
+        count = 5;
+      } else if (uniqueKey) {
         count = 5;
       }
-      console.log("count : "+ count);
+      console.log("count : " + count);
       for (let i = 0; i < count; i++) {
         // if (i === 0) {
         //   branchID = "" + parameter[branchSettings.branchIDFormat[i]];
@@ -46,14 +44,13 @@ const generateBranchID = async (
         //   branchID =
         //     branchID + "-" + parameter[branchSettings.branchIDFormat[i]];
         // }
-        branchID =
-            branchID + parameter[branchSettings.branchIDFormat[i]];
+        branchID = branchID + parameter[branchSettings.branchIDFormat[i]];
       }
-      console.log("branchID: "+branchID);
+      console.log("branchID: " + branchID);
     })
     .catch(() => {
       branchID = level + countryCode + stateCode + districtCode;
-      if(vdcCode) {
+      if (vdcCode) {
         branchID = branchID + vdcCode;
       }
       if (uniqueKey) {
@@ -72,7 +69,7 @@ const createRootBranch = async (req, res) => {
     req.body.districtCode,
     req.body.vdcCode
   );
-    console.log(branchID);
+  console.log(branchID);
   let branch = new Branch({
     branchID: branchID,
     orgID: req.body.orgID,
@@ -125,7 +122,11 @@ const createBranch = (req, res) => {
           error = `Couldn't find the parent branch.`;
           return;
         }
-        level = parentBranch.level + 1;
+
+        level = Number(parentBranch.level) + 1;
+        if (level < 10) {
+          level = "0" + level;
+        }
 
         success = `Branch Level was set after verifying with the parent branch; `;
         return parentBranch;
@@ -139,7 +140,9 @@ const createBranch = (req, res) => {
       if (error) {
         return;
       }
-      console.log(req.body.uniqueKey);
+
+      console.log("level");
+      console.log(level);
       branchID = await generateBranchID(
         level,
         req.body.countryCode,
@@ -298,15 +301,15 @@ const updateBranchStructure = (req, res) => {
       return branch;
     })
     .then(async (branch) => {
-      let countryCode, stateCode, districtCode, uniqueKey;
+      let countryCode, stateCode, districtCode, vdcCode, uniqueKey;
       console.log("Update branch and new parent branch.");
       if (error) {
         return;
       }
-      console.log("Before update Branch data pass error test");
+      // console.log("Before update Branch data pass error test");
       console.log(branch);
       parentBranchID = branch.parentBranchID;
-      console.log("2.Before update Branch data pass error test");
+      // console.log("2.Before update Branch data pass error test");
 
       if (newParentBranch) {
         branch.parentBranchID = newParentBranch.branchID;
@@ -326,6 +329,15 @@ const updateBranchStructure = (req, res) => {
         districtCode = branch.districtCode;
       }
 
+      //Assign new vdcCode
+      if (req.body.vdcCode) {
+        branch.vdcCode = req.body.vdcCode;
+        vdcCode = req.body.vdcCode;
+      } else {
+        vdcCode = branch.vdcCode;
+      }
+
+      //Assign new uniqueKey
       if (req.body.uniqueKey) {
         branch.uniqueKey = req.body.uniqueKey;
         uniqueKey = req.body.uniqueKey;
@@ -338,10 +350,11 @@ const updateBranchStructure = (req, res) => {
         countryCode,
         stateCode,
         districtCode,
+        vdcCode,
         uniqueKey
       );
-      console.log("Changing branch ID");
-      console.log(branch.branchID);
+      // console.log("Changing branch ID");
+      // console.log(branch.branchID);
 
       console.log("Update Branch data");
       await branch
@@ -420,8 +433,20 @@ const updateBranchStructure = (req, res) => {
       }
 
       await Branch.find({ parentBranchID: req.params.branchID })
-        .then((childBranch) => {
-          console.log(childBranch);
+        .then(async (childBranch) => {
+          for (let i = 0; i < childBranch.length; i++) {
+            childBranch[i].parentBranchID = branch.branchID;
+            await childBranch[i]
+              .save()
+              .then()
+              .catch(() => {
+                error = `Couldn't change child branch ${childBranch[i].branchID}'s records.`;
+              });
+          }
+
+          if (error) {
+            return;
+          }
           success = `${success}All entries in child branches have been updated;`;
         })
         .catch(() => {
@@ -593,9 +618,7 @@ const getLocationByCountry = (req, res) => {
   BranchLocations.find({ country: req.body.country })
     .then((Location) =>
       Location === null
-        ? res
-            .status(404)
-            .json({ error: `This location does not exist.` })
+        ? res.status(404).json({ error: `This location does not exist.` })
         : res.json(Location)
     )
     .catch((err) => res.status(400).json(err));
@@ -605,37 +628,40 @@ const getLocationByState = (req, res) => {
   BranchLocations.find({ country: req.body.country, state: req.body.state })
     .then((Location) =>
       Location === null
-        ? res
-            .status(404)
-            .json({ error: `This location does not exist.` })
+        ? res.status(404).json({ error: `This location does not exist.` })
         : res.json(Location)
     )
     .catch((err) => res.status(400).json(err));
-}
+};
 
 const getLocationByDistrict = (req, res) => {
-  BranchLocations.find({ country: req.body.country, state: req.body.state, district: req.body.district })
+  BranchLocations.find({
+    country: req.body.country,
+    state: req.body.state,
+    district: req.body.district,
+  })
     .then((Location) =>
       Location === null
-        ? res
-            .status(404)
-            .json({ error: `This location does not exist.` })
+        ? res.status(404).json({ error: `This location does not exist.` })
         : res.json(Location)
     )
     .catch((err) => res.status(400).json(err));
-}
+};
 
 const getLocationByVDC = (req, res) => {
-  BranchLocations.find({ country: req.body.country, state: req.body.state, district: req.body.district, vdc: req.body.vdc })
+  BranchLocations.find({
+    country: req.body.country,
+    state: req.body.state,
+    district: req.body.district,
+    vdc: req.body.vdc,
+  })
     .then((Location) =>
       Location === null
-        ? res
-            .status(404)
-            .json({ error: `This location does not exist.` })
+        ? res.status(404).json({ error: `This location does not exist.` })
         : res.json(Location)
     )
     .catch((err) => res.status(400).json(err));
-}
+};
 
 // const getAllCountries = (req, res) => {
 //   res.json(Country.getAllCountries());
