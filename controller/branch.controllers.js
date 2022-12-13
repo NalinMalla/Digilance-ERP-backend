@@ -615,7 +615,7 @@ const createBranchLocation = (req, res) => {
 };
 
 const getLocationByCountry = (req, res) => {
-  BranchLocations.find({ country: req.body.country })
+  BranchLocations.find({ countryCode: req.body.countryCode })
     .then((Location) =>
       Location === null
         ? res.status(404).json({ error: `This location does not exist.` })
@@ -625,7 +625,7 @@ const getLocationByCountry = (req, res) => {
 };
 
 const getLocationByState = (req, res) => {
-  BranchLocations.find({ country: req.body.country, state: req.body.state })
+  BranchLocations.find({ countryCode: req.body.countryCode, stateCode: req.body.stateCode })
     .then((Location) =>
       Location === null
         ? res.status(404).json({ error: `This location does not exist.` })
@@ -636,9 +636,9 @@ const getLocationByState = (req, res) => {
 
 const getLocationByDistrict = (req, res) => {
   BranchLocations.find({
-    country: req.body.country,
-    state: req.body.state,
-    district: req.body.district,
+    countryCode: req.body.countryCode,
+    stateCode: req.body.stateCode,
+    districtCode: req.body.districtCode,
   })
     .then((Location) =>
       Location === null
@@ -650,10 +650,10 @@ const getLocationByDistrict = (req, res) => {
 
 const getLocationByVDC = (req, res) => {
   BranchLocations.find({
-    country: req.body.country,
-    state: req.body.state,
-    district: req.body.district,
-    vdc: req.body.vdc,
+    countryCode: req.body.countryCode,
+    stateCode: req.body.stateCode,
+    districtCode: req.body.districtCode,
+    vdcCode: req.body.vdcCode,
   })
     .then((Location) =>
       Location === null
