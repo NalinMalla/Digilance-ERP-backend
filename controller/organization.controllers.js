@@ -7,7 +7,6 @@ let OrganizationSettings = require("../models/organizationSettings.model");
 
 const createOrganization = (req, res) => {
   console.log("Start Create org");
-
   // let taxClearDate = req.body.taxClearDate;
   let organization = new Organization({
     orgID: req.body.orgID,
@@ -50,11 +49,11 @@ const createOrganization = (req, res) => {
   console.log(req.files);
   Object.values(req.files).forEach((val) => {
     //Here, val stores a file sent in each iteration
-    console.log("val");
-    console.log(val);
-    console.log(val.length);
-
     for (let i = 0; i < val.length; i++) {
+      if(val[i].size> req.fileSize){
+        return res.json({errors: true, message: `File size cannot exceed ${req.fileSize} bytes.`})
+      }
+
       let index = val[i].fieldname; //fieldname is the name of the input field in the frontend
       // console.log(index);
       if (index == "logo") {
@@ -180,6 +179,9 @@ const updateOrganizationInfo = (req, res) => {
 
         for (let i = 0; i < val.length; i++) {
           console.log("Enter val");
+          if(val[i].size> req.fileSize){
+            return res.json({errors: true, message: `File size cannot exceed ${req.fileSize} bytes.`})
+          }
           let index = val[i].fieldname; //fieldname is the name of the input field in the frontend
           console.log(index);
 
@@ -344,8 +346,6 @@ const updateOrganizationSettings = (req, res) => {
 const getOrganizationSettings = (req, res) => {
   OrganizationSettings.findOne()
     .then((organizationSettings) => {
-      console.log("organizationSettings");
-      console.log(organizationSettings);
       return res.json(organizationSettings);
     })
     .catch((err) => res.json(err));

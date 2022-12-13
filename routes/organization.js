@@ -7,7 +7,7 @@ const authJwt = require("../middleWares/authJwt");
 const organizationController = require("../controller/organization.controllers");
 const OrganizationSettings = require("../models/organizationSettings.model");
 
-let fileSize, validFileExts;
+let validFileExts, uploadName;
 
 // Required for storing image in the backend
 const Storage = multer.diskStorage({
@@ -25,10 +25,9 @@ const Storage = multer.diskStorage({
 
 const upload = multer({
   storage: Storage,
-  limits: { fileSize: fileSize }, //In bytes, so its 1000000 is 1MB
+  // limits: { fileSize: fileSize }, //In bytes, so its 1000000 is 1MB
   fileFilter: function (req, file, callback) {
     var ext = path.extname(file.originalname);
-    // var validExt = [".png", ".jpg", ".jpeg", ".txt", ".gif"];
     if (!validFileExts.includes(ext)) {
       return callback(new Error("Only images are allowed"));
     }
@@ -37,7 +36,7 @@ const upload = multer({
   },
 });
 
-const uploadName = [
+uploadName = [
   { name: "logo", maxCount: 1 },
   { name: "registerCert", maxCount: 10 },
   { name: "panCert", maxCount: 1 },
@@ -61,7 +60,7 @@ const getOrgSetting = (req, res, next) => {
       return;
     }
     else{
-      fileSize= Number(orgSettings.fileSize);
+      req.fileSize= Number(orgSettings.fileSize);
       validFileExts= orgSettings.validFileExtensions;
       next();
       return;
@@ -98,6 +97,7 @@ router
   .route("/update/:orgID")
   .put(
     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    getOrgSetting,
     upload.fields(uploadName),
     organizationController.updateOrganizationInfo
   );
