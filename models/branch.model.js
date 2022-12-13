@@ -30,7 +30,7 @@ const BranchSchema = new schema(
     poBoxNo: { type: String },
     level: { type: String, required: [true, "Branch Level is mandatory"] }, //Set by the system by comparing to the parentBranch level eventually leading to the root branch whose level 0
     departments: [{name: {type: String}, depID: {type:String}}],
-    branchHead: {type: String}
+    branchHead: {type: schema.Types.ObjectId}
   },
   {
     timestamps: true,

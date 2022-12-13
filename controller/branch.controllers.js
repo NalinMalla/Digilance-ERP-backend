@@ -329,7 +329,7 @@ const updateBranchStructure = (req, res) => {
         districtCode = branch.districtCode;
       }
 
-      //Assign new vdcCode
+      //vdcCode is only updated if a valid value is sent from the request
       if (req.body.vdcCode) {
         branch.vdcCode = req.body.vdcCode;
         vdcCode = req.body.vdcCode;

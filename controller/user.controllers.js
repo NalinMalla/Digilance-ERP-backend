@@ -10,7 +10,6 @@ let PasswordComplexity = require("../models/passwordComplexity.model");
 //Basic User CRUD functions
 const createUser = async (req, res) => {
   const eID = Number(req.body.eID);
-
   const salt = await bcrypt.genSalt(10);
   const secPassword = await bcrypt.hash(req.body.password, salt);
 
@@ -22,6 +21,7 @@ const createUser = async (req, res) => {
     passwordHistory: [secPassword],
     privilege: req.body.privilege,
     modules: req.body.modules,
+    level: req.body.level
   });
 
   newUser
@@ -53,6 +53,30 @@ const findUserByEID = (req, res) => {
     .catch((err) => res.status(400).json(err));
 };
 
+const findUserByID = (req, res) => {
+  User.findOne({ _id: req.params._id })   //Normally id works but id is being used by authJwt middleware
+    .then((user) =>
+      user === null
+        ? res
+            .status(404)
+            .json({ error: `User with id ${req.params.id} does not exist.` })
+        : res.json(user)
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
+const findUserByUName = (req, res) => {
+  User.findOne({ userName: req.params.userName })
+    .then((user) =>
+      user === null
+        ? res
+            .status(404)
+            .json({ error: `User with user name ${req.params.userName} does not exist.` })
+        : res.json(user)
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
 const updateUser = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then(async (user) => {
@@ -73,6 +97,7 @@ const updateUser = (req, res) => {
       user.eID = Number(req.body.eID);
       user.privilege = req.body.privilege;
       user.modules = req.body.modules;
+      user.level= req.body.level;
 
       user
         .save()
@@ -377,6 +402,8 @@ const retrievePasswordComplexity = (req, res) => {
 exports.createUser = createUser;
 exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
+exports.findUserByID = findUserByID;
+exports.findUserByUName = findUserByUName;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;

@@ -13,6 +13,11 @@ router
 
 router.route("/:eID").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.findUserByEID);
 
+router.route("/id/:_id").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.findUserByID);
+
+router.route("/userName/:userName").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.findUserByUName);
+
+
 router.route("/:eID/getInfo").get([authJwt.verifyToken, authJwt.selfVerification, authJwt.accessGrant], userController.findUserByEID);
 
 router
