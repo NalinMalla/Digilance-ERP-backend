@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 
 let User = require("../models/user.model");
 let SignInLog = require("../models/userSignInLog.model");
@@ -21,7 +22,8 @@ const createUser = async (req, res) => {
     passwordHistory: [secPassword],
     privilege: req.body.privilege,
     modules: req.body.modules,
-    level: req.body.level
+    level: req.body.level,
+    branchID: req.body.branchID,
   });
 
   newUser
@@ -44,23 +46,25 @@ const findAllUsers = (req, res) => {
 const findUserByEID = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then((user) =>
-      user === null
-        ? res
-            .status(404)
-            .json({ error: `User with eID ${req.params.eID} does not exist.` })
-        : res.json(user)
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with eID ${req.params.eID} does not exist.`,
+          })
     )
     .catch((err) => res.status(400).json(err));
 };
 
 const findUserByID = (req, res) => {
-  User.findOne({ _id: req.params._id })   //Normally id works but id is being used by authJwt middleware
+  User.findOne({ _id: req.params._id }) //Normally id works but id is being used by authJwt middleware
     .then((user) =>
-      user === null
-        ? res
-            .status(404)
-            .json({ error: `User with id ${req.params.id} does not exist.` })
-        : res.json(user)
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with id ${req.params.id} does not exist.`,
+          })
     )
     .catch((err) => res.status(400).json(err));
 };
@@ -68,23 +72,38 @@ const findUserByID = (req, res) => {
 const findUserByUName = (req, res) => {
   User.findOne({ userName: req.params.userName })
     .then((user) =>
-      user === null
-        ? res
-            .status(404)
-            .json({ error: `User with user name ${req.params.userName} does not exist.` })
-        : res.json(user)
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with user name ${req.params.userName} does not exist.`,
+          })
     )
     .catch((err) => res.status(400).json(err));
 };
 
-const findUserByName = (req, res) => {
+const findUsersByName = (req, res) => {
   User.find({ name: req.params.name })
     .then((user) =>
-      user === null
-        ? res
-            .status(404)
-            .json({ error: `User with user name ${req.params.userName} does not exist.` })
-        : res.json(user)
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with user name ${req.params.userName} does not exist.`,
+          })
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
+const findUsersByBranchID = (req, res) => {
+  User.find({ branchID: req.params.branchID })
+    .then((user) =>
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `Branch ${req.params.branchID} currently doesn't have any employees.`,
+          })
     )
     .catch((err) => res.status(400).json(err));
 };
@@ -109,7 +128,8 @@ const updateUser = (req, res) => {
       user.eID = Number(req.body.eID);
       user.privilege = req.body.privilege;
       user.modules = req.body.modules;
-      user.level= req.body.level;
+      user.level = req.body.level;
+      user.branchID = req.body.branchID;
 
       user
         .save()
@@ -174,10 +194,9 @@ const logUserSignIn = (user, error, clientIP) => {
             .catch((err) => console.log(err));
         })
         .catch((err) => console.log(err));
-
     }
   }
-  console.log("continuity:"+continuity);
+  console.log("continuity:" + continuity);
   const userSignInLog = new SignInLog({
     eID: eID,
     userName: userName,
@@ -185,7 +204,7 @@ const logUserSignIn = (user, error, clientIP) => {
     errorCode: error,
     remarks: error ? "Unsuccessful Login" : "Successful Login",
     loggingIP: clientIP,
-    continuity: continuity
+    continuity: continuity,
   });
 
   userSignInLog
@@ -345,12 +364,12 @@ const lockUserByID = (req, res) => {
           user.lockPeriod.start = new Date();
           user.lock = true;
         }
-        if(req.body.continuity){
+        if (req.body.continuity) {
           user.continuity = req.body.continuity;
         }
       } else {
         user.lock = true;
-        if(req.body.continuity){
+        if (req.body.continuity) {
           user.continuity = req.body.continuity;
         }
       }
@@ -416,7 +435,8 @@ exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
 exports.findUserByID = findUserByID;
 exports.findUserByUName = findUserByUName;
-exports.findUserByName = findUserByName;
+exports.findUsersByName = findUsersByName;
+exports.findUsersByBranchID = findUsersByBranchID;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
