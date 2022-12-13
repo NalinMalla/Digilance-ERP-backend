@@ -71,10 +71,10 @@ router
     branchController.createBranchLocation
   );
 
-router.route("/getLocationByCountry").get(branchController.getLocationByCountry);
-router.route("/getLocationByState").get(branchController.getLocationByState);
-router.route("/getLocationByDistrict").get(branchController.getLocationByDistrict);
-router.route("/getLocationByVDC").get(branchController.getLocationByVDC);
+router.route("/getLocationByCountry").post(branchController.getLocationByCountry);
+router.route("/getLocationByState").post(branchController.getLocationByState);
+router.route("/getLocationByDistrict").post(branchController.getLocationByDistrict);
+router.route("/getLocationByVDC").post(branchController.getLocationByVDC);
 
 // router.route("/getAllCountries").get(branchController.getAllCountries);
 // router.route("/getCountry/:countryCode").get(branchController.getCountry);
