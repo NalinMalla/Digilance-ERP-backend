@@ -1,67 +1,85 @@
-let Country = require("country-state-city").Country;
-const State = require("country-state-city").State;
-const City = require("country-state-city").City;
+// let Country = require("country-state-city").Country;
+// const State = require("country-state-city").State;
+// const city = require("country-state-city").districtCode;
 
 let Branch = require("../models/branch.model");
 let BranchSettings = require("../models/branchSettings.model");
+let BranchLocations = require("../models/branchLocations.model");
 let Organization = require("../models/organization.model");
 
 const generateBranchID = async (
   level,
   countryCode,
   stateCode,
-  city,
+  districtCode,
+  vdcCode = null,
   uniqueKey = null
 ) => {
-  let branchID;
+  let branchID = "";
   let parameter = {
     level: level,
     countryCode: countryCode,
     stateCode: stateCode,
-    city: city,
+    districtCode: districtCode,
+    vdcCode: vdcCode,
     uniqueKey: uniqueKey,
   };
-  console.log("uniqueKey");
-  console.log(parameter.uniqueKey);
+
   await BranchSettings.findOne()
     .then((branchSettings) => {
       let count = 4;
-      if (uniqueKey) {
+      
+      if(vdcCode && uniqueKey){
+        count = 6
+      }
+      else if(vdcCode) {
+        count = 5
+      }
+      else if (uniqueKey) {
         count = 5;
       }
+      console.log("count : "+ count);
       for (let i = 0; i < count; i++) {
-        if (i === 0) {
-          branchID = "" + parameter[branchSettings.branchIDFormat[i]];
-        } else {
-          branchID =
-            branchID + "-" + parameter[branchSettings.branchIDFormat[i]];
-        }
+        // if (i === 0) {
+        //   branchID = "" + parameter[branchSettings.branchIDFormat[i]];
+        // } else {
+        //   branchID =
+        //     branchID + "-" + parameter[branchSettings.branchIDFormat[i]];
+        // }
+        branchID =
+            branchID + parameter[branchSettings.branchIDFormat[i]];
       }
+      console.log("branchID: "+branchID);
     })
     .catch(() => {
-      branchID = "" + level + "-" + countryCode + "-" + stateCode + "-" + city;
+      branchID = level + countryCode + stateCode + districtCode;
+      if(vdcCode) {
+        branchID = branchID + vdcCode;
+      }
       if (uniqueKey) {
-        branchID = branchID + "-" + uniqueKey;
+        branchID = branchID + uniqueKey;
       }
     });
   console.log("returning branchID");
   return branchID;
 };
 
-const createRootBranch = (req, res) => {
-  let branchID = generateBranchID(
-    0,
+const createRootBranch = async (req, res) => {
+  let branchID = await generateBranchID(
+    "00",
     req.body.countryCode,
     req.body.stateCode,
-    req.body.city
+    req.body.districtCode,
+    req.body.vdcCode
   );
-
+    console.log(branchID);
   let branch = new Branch({
     branchID: branchID,
     orgID: req.body.orgID,
     countryCode: req.body.countryCode,
     stateCode: req.body.stateCode,
-    city: req.body.city,
+    districtCode: req.body.districtCode,
+    vdcCode: req.body.vdcCode,
     level: 0,
     address: req.body.address,
     email: req.body.email,
@@ -108,6 +126,7 @@ const createBranch = (req, res) => {
           return;
         }
         level = parentBranch.level + 1;
+
         success = `Branch Level was set after verifying with the parent branch; `;
         return parentBranch;
       },
@@ -125,7 +144,8 @@ const createBranch = (req, res) => {
         level,
         req.body.countryCode,
         req.body.stateCode,
-        req.body.city,
+        req.body.districtCode,
+        req.body.vdcCode,
         req.body.uniqueKey
       );
 
@@ -134,7 +154,9 @@ const createBranch = (req, res) => {
         orgID: req.body.orgID,
         countryCode: req.body.countryCode,
         stateCode: req.body.stateCode,
-        city: req.body.city,
+        districtCode: req.body.districtCode,
+        vdcCode: req.body.vdcCode,
+        uniqueKey: req.body.uniqueKey,
         level: level,
         address: req.body.address,
         email: req.body.email,
@@ -276,6 +298,7 @@ const updateBranchStructure = (req, res) => {
       return branch;
     })
     .then(async (branch) => {
+      let countryCode, stateCode, districtCode, uniqueKey;
       console.log("Update branch and new parent branch.");
       if (error) {
         return;
@@ -290,16 +313,36 @@ const updateBranchStructure = (req, res) => {
         // branch.level = level;
       }
 
-      if (req.body.countryCode && req.body.stateCode && req.body.city) {
-        branch.branchID = await generateBranchID(
-          branch.level,
-          req.body.countryCode,
-          req.body.stateCode,
-          req.body.city,
-          req.body.uniqueKey
-        );
+      if (req.body.countryCode && req.body.stateCode && req.body.districtCode) {
+        branch.countryCode = req.body.countryCode;
+        branch.stateCode = req.body.stateCode;
+        branch.districtCode = req.body.districtCode;
+        countryCode = req.body.countryCode;
+        stateCode = req.body.stateCode;
+        districtCode = req.body.districtCode;
+      } else {
+        countryCode = branch.countryCode;
+        stateCode = branch.stateCode;
+        districtCode = branch.districtCode;
       }
-      
+
+      if (req.body.uniqueKey) {
+        branch.uniqueKey = req.body.uniqueKey;
+        uniqueKey = req.body.uniqueKey;
+      } else {
+        uniqueKey = branch.uniqueKey;
+      }
+
+      branch.branchID = await generateBranchID(
+        branch.level,
+        countryCode,
+        stateCode,
+        districtCode,
+        uniqueKey
+      );
+      console.log("Changing branch ID");
+      console.log(branch.branchID);
+
       console.log("Update Branch data");
       await branch
         .save()
@@ -412,8 +455,26 @@ const getAllBranchInfo = (req, res) => {
     .catch((err) => res.status(400).json(err));
 };
 
+const recursiveDelete = async (branchID) => {
+  await Branch.findOne({ parentBranchID: branchID }).then(async (child) => {
+    console.log(`Visited child ${child.branchID}`);
+    console.log(child.childBranchIDs);
+    if (!child.childBranchIDs || child.childBranchIDs.length < 1) {
+      // await Branch.deleteOne({ branchID: child.branchID }).then(
+      //   () => {
+      //     console.log(`Deleted Branch ${child.branchID}`)
+      //   }
+      // );
+      console.log(`Deleted Branch ${child.branchID}`);
+      return;
+    }
+
+    recursiveTrial(child.branchID);
+  });
+};
+
 const deleteBranch = (req, res) => {
-  let error, success;
+  let error, success, children;
   Branch.findOne({ branchID: req.params.branchID })
     .then(async (branch) => {
       await Organization.findOne({ orgID: branch.orgID })
@@ -453,6 +514,12 @@ const deleteBranch = (req, res) => {
           return;
         });
     })
+    // .then(async () => {
+    //   if (error) {
+    //     return;
+    //   }
+    //   await recursiveDelete(req.params.branchID);
+    // })
     .then(async () => {
       if (error) {
         return;
@@ -488,43 +555,131 @@ const deleteBranch = (req, res) => {
     .catch((err) => res.json(err));
 };
 
-const getAllCountries = (req, res) => {
-  res.json(Country.getAllCountries());
+const recursiveTrial = (branchID) => {
+  Branch.find({ parentBranchID: branchID }).then(async (child) => {
+    if (!child.childBranchIDs) {
+      return;
+    }
+    recursiveTrial(child.branchID);
+    console.log(child);
+  });
 };
 
-const getCountry = (req, res) => {
-  res.json(Country.getCountryByCode(req.params.countryCode));
+const createBranchLocation = (req, res) => {
+  let branchLocation = new BranchLocations({
+    country: req.body.country,
+    countryCode: req.body.countryCode,
+    state: req.body.state,
+    stateCode: req.body.stateCode,
+    district: req.body.district,
+    districtCode: req.body.districtCode,
+    vdc: req.body.vdc,
+    vdc: req.body.vdcCode,
+    noOfWards: req.body.noOfWards,
+  });
+
+  branchLocation
+    .save()
+    .then(() =>
+      res.json({
+        success: true,
+        message: `New Branch created.`,
+      })
+    )
+    .catch((err) => res.json(err));
 };
 
-const getAllStates = (req, res) => {
-  res.json(State.getAllStates());
+const getLocationByCountry = (req, res) => {
+  BranchLocations.find({ country: req.body.country })
+    .then((Location) =>
+      Location === null
+        ? res
+            .status(404)
+            .json({ error: `This location does not exist.` })
+        : res.json(Location)
+    )
+    .catch((err) => res.status(400).json(err));
 };
 
-const getStatesOfCountry = (req, res) => {
-  res.json(State.getStatesOfCountry(req.params.countryCode));
-};
+const getLocationByState = (req, res) => {
+  BranchLocations.find({ country: req.body.country, state: req.body.state })
+    .then((Location) =>
+      Location === null
+        ? res
+            .status(404)
+            .json({ error: `This location does not exist.` })
+        : res.json(Location)
+    )
+    .catch((err) => res.status(400).json(err));
+}
 
-const getAllCities = (req, res) => {
-  res.json(City.getAllCities());
-};
+const getLocationByDistrict = (req, res) => {
+  BranchLocations.find({ country: req.body.country, state: req.body.state, district: req.body.district })
+    .then((Location) =>
+      Location === null
+        ? res
+            .status(404)
+            .json({ error: `This location does not exist.` })
+        : res.json(Location)
+    )
+    .catch((err) => res.status(400).json(err));
+}
 
-const getCitiesOfState = (req, res) => {
-  console.log(req.params.stateCode);
-  console.log(
-    City.getCitiesOfState(req.params.countryCode, req.params.stateCode)
-  );
-  res.json(City.getCitiesOfState(req.params.countryCode, req.params.stateCode));
-};
+const getLocationByVDC = (req, res) => {
+  BranchLocations.find({ country: req.body.country, state: req.body.state, district: req.body.district, vdc: req.body.vdc })
+    .then((Location) =>
+      Location === null
+        ? res
+            .status(404)
+            .json({ error: `This location does not exist.` })
+        : res.json(Location)
+    )
+    .catch((err) => res.status(400).json(err));
+}
 
-const getCitiesOfCountry = (req, res) => {
-  console.log(City.getCitiesOfCountry(req.params.countryCode).length);
+// const getAllCountries = (req, res) => {
+//   res.json(Country.getAllCountries());
+// };
 
-  res.json(City.getCitiesOfCountry(req.params.countryCode));
-};
+// const getCountry = (req, res) => {
+//   res.json(Country.getCountryByCode(req.params.countryCode));
+// };
+
+// const getAllStates = (req, res) => {
+//   res.json(State.getAllStates());
+// };
+
+// const getStatesOfCountry = (req, res) => {
+//   res.json(State.getStatesOfCountry(req.params.countryCode));
+// };
+
+// const getAllCities = (req, res) => {
+//   res.json(districtCode.getAllCities());
+// };
+
+// const getCitiesOfState = (req, res) => {
+//   console.log(req.params.stateCode);
+//   console.log(
+//     districtCode.getCitiesOfState(req.params.countryCode, req.params.stateCode)
+//   );
+//   res.json(districtCode.getCitiesOfState(req.params.countryCode, req.params.stateCode));
+// };
+
+// const getCitiesOfCountry = (req, res) => {
+//   console.log(districtCode.getCitiesOfCountry(req.params.countryCode).length);
+
+//   res.json(districtCode.getCitiesOfCountry(req.params.countryCode));
+// };
 
 const updateBranchSettings = (req, res) => {
   BranchSettings.findOne()
     .then((branchSettings) => {
+      if (!req.body.branchIDFormat) {
+        return res.json({
+          errors: true,
+          message: `A valid Branch ID format must be set for updating branch settings.`,
+        });
+      }
       if (branchSettings) {
         branchSettings.branchIDFormat = req.body.branchIDFormat;
       } else {
@@ -558,12 +713,18 @@ exports.updateBranchStructure = updateBranchStructure;
 exports.getBranchInfo = getBranchInfo;
 exports.getAllBranchInfo = getAllBranchInfo;
 exports.deleteBranch = deleteBranch;
-exports.getAllCountries = getAllCountries;
-exports.getAllStates = getAllStates;
-exports.getAllCities = getAllCities;
-exports.getCountry = getCountry;
-exports.getStatesOfCountry = getStatesOfCountry;
-exports.getCitiesOfState = getCitiesOfState;
-exports.getCitiesOfCountry = getCitiesOfCountry;
+// exports.getAllCountries = getAllCountries;
+// exports.getAllStates = getAllStates;
+// exports.getAllCities = getAllCities;
+// exports.getCountry = getCountry;
+// exports.getStatesOfCountry = getStatesOfCountry;
+// exports.getCitiesOfState = getCitiesOfState;
+// exports.getCitiesOfCountry = getCitiesOfCountry;
 exports.updateBranchSettings = updateBranchSettings;
 exports.getBranchSettings = getBranchSettings;
+exports.recursiveTrial = recursiveTrial;
+exports.createBranchLocation = createBranchLocation;
+exports.getLocationByCountry = getLocationByCountry;
+exports.getLocationByState = getLocationByState;
+exports.getLocationByDistrict = getLocationByDistrict;
+exports.getLocationByVDC = getLocationByVDC;
