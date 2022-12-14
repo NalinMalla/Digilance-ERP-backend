@@ -1,6 +1,7 @@
 // let Country = require("country-state-city").Country;
 // const State = require("country-state-city").State;
 // const city = require("country-state-city").districtCode;
+let mongoose = require("mongoose");
 
 let Branch = require("../models/branch.model");
 let BranchSettings = require("../models/branchSettings.model");
@@ -62,6 +63,7 @@ const generateBranchID = async (
 };
 
 const createRootBranch = async (req, res) => {
+  let error;
   let branchID = await generateBranchID(
     "00",
     req.body.countryCode,
@@ -70,6 +72,11 @@ const createRootBranch = async (req, res) => {
     req.body.vdcCode
   );
   console.log(branchID);
+  let branchHead;
+  if (req.body.branchHead) {
+    branchHead = mongoose.Types.ObjectId(req.body.branchHead);
+  }
+
   let branch = new Branch({
     branchID: branchID,
     orgID: req.body.orgID,
@@ -84,7 +91,7 @@ const createRootBranch = async (req, res) => {
     faxNo: req.body.faxNo,
     poBoxNo: req.body.poBoxNo,
     departments: req.body.departments,
-    branchHead: req.body.branchHead,
+    branchHead: branchHead,
   });
 
   branch
@@ -98,16 +105,22 @@ const createRootBranch = async (req, res) => {
             organization.branchID = branchID;
             organization
               .save()
-              .then(
-                res.json({
-                  success: true,
-                  message: `New Branch created.`,
-                })
-              )
-              .catch((err) => res.json(err));
+              .then()
+              .catch((err) => {
+                error = err;
+                return;
+              });
           }
         })
-        .catch((err) => res.json(err));
+        .catch((err) => {
+          error = err;
+          return;
+        });
+      if (error) {
+        return res.json(error);
+      } else {
+        return res.json({ success: true, message: "Root Branch Created." });
+      }
     })
     .catch((err) => res.json(err));
 };
@@ -151,6 +164,10 @@ const createBranch = (req, res) => {
         req.body.vdcCode,
         req.body.uniqueKey
       );
+      let branchHead;
+      if (req.body.branchHead) {
+        branchHead = mongoose.Types.ObjectId(req.body.branchHead);
+      }
 
       let branch = new Branch({
         branchID: branchID,
@@ -167,7 +184,7 @@ const createBranch = (req, res) => {
         faxNo: req.body.faxNo,
         poBoxNo: req.body.poBoxNo,
         departments: req.body.departments,
-        branchHead: req.body.branchHead,
+        branchHead: branchHead,
         parentBranchID: req.body.parentBranchID,
       });
       await branch
@@ -625,7 +642,10 @@ const getLocationByCountry = (req, res) => {
 };
 
 const getLocationByState = (req, res) => {
-  BranchLocations.find({ countryCode: req.body.countryCode, stateCode: req.body.stateCode })
+  BranchLocations.find({
+    countryCode: req.body.countryCode,
+    stateCode: req.body.stateCode,
+  })
     .then((Location) =>
       Location === null
         ? res.status(404).json({ error: `This location does not exist.` })
