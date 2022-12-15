@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
+let uniqueValidator = require("mongoose-unique-validator");
 
 // const OrganizationSchema = new schema(
 //   {
@@ -70,6 +71,11 @@ const OrganizationSchema = new schema(
     timestamps: true,
   }
 );
+
+OrganizationSchema.plugin(uniqueValidator, {
+  type: "",
+  message: "This {PATH} is already taken.",
+}); // Replaces unique errors from the default MongoServerError(E11000) to ValidationError
 
 const Organization = mongoose.model("Organization", OrganizationSchema);
 module.exports = Organization;

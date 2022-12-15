@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
+let uniqueValidator = require("mongoose-unique-validator");
 
 const BranchSchema = new schema(
   {
@@ -36,5 +37,11 @@ const BranchSchema = new schema(
     timestamps: true,
   }
 );
+
+BranchSchema.plugin(uniqueValidator, {
+  type: "",
+  message: "This {PATH} is already taken.",
+}); // Replaces unique errors from the default MongoServerError(E11000) to ValidationError
+
 const Branch = mongoose.model("Branch", BranchSchema);
 module.exports = Branch;

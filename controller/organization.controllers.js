@@ -351,8 +351,6 @@ const getOrganizationSettings = (req, res) => {
     .catch((err) => res.json(err));
 };
 
-
-
 exports.createOrganization = createOrganization;
 exports.updateOrganizationInfo = updateOrganizationInfo;
 exports.getOrganizationInfo = getOrganizationInfo;
