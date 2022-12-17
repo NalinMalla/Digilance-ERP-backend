@@ -22,30 +22,7 @@ const Storage = multer.diskStorage({
     );
   },
 });
-
-const upload = multer({
-  storage: Storage,
-  // limits: { fileSize: fileSize }, //In bytes, so its 1000000 is 1MB
-  fileFilter: function (req, file, callback) {
-    var ext = path.extname(file.originalname);
-    if (!validFileExts.includes(ext)) {
-      return callback(new Error("Only images are allowed"));
-    }
-    
-    callback(null, true);
-  },
-});
-
-uploadName = [
-  { name: "logo", maxCount: 1 },
-  { name: "registerCert", maxCount: 10 },
-  { name: "panCert", maxCount: 1 },
-  { name: "taxClearCert", maxCount: 50 },
-  { name: "mou", maxCount: 10 },
-  { name: "moa", maxCount: 10 },
-  { name: "orgChart", maxCount: 10 },
-  { name: "vatCert", maxCount: 1 },
-];
+let limits;
 
 const getOrgSetting = (req, res, next) => {
   OrganizationSettings.findOne().exec((err, orgSettings) => {
@@ -61,12 +38,39 @@ const getOrgSetting = (req, res, next) => {
     }
     else{
       req.fileSize= Number(orgSettings.fileSize);
+      // limits = {fileSize: Number(orgSettings.fileSize)};
       validFileExts= orgSettings.validFileExtensions;
       next();
       return;
     }
   });
 };
+
+const upload = multer({
+  storage: Storage,
+  // limits: limits, //In bytes, so its 1000000 is 1MB
+  fileFilter: function (req, file, callback) {
+    var ext = path.extname(file.originalname);
+    if (!validFileExts.includes(ext)) {
+      return callback(new Error("Only images are allowed"));
+    }
+    callback(null, true);
+  }
+});
+
+
+uploadName = [
+  { name: "logo", maxCount: 1 },
+  { name: "registerCert", maxCount: 10 },
+  { name: "panCert", maxCount: 1 },
+  { name: "taxClearCert", maxCount: 50 },
+  { name: "mou", maxCount: 10 },
+  { name: "moa", maxCount: 10 },
+  { name: "orgChart", maxCount: 10 },
+  { name: "vatCert", maxCount: 1 },
+];
+
+
 
 router.route("/all/:orgID").get(organizationController.getOrganizationInfo);
 
@@ -75,14 +79,6 @@ router.route("/all").get(organizationController.getAllOrganizationInfo);
 router
   .route("/basic/:orgID")
   .get(organizationController.getOrganizationBasicInfo);
-
-// router
-//   .route("/create")
-//   .post(
-//     [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
-//     upload.any(),
-//     organizationController.createOrganization
-//   );
 
 router
   .route("/create")

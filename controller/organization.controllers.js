@@ -6,8 +6,9 @@ let Organization = require("../models/organization.model");
 let OrganizationSettings = require("../models/organizationSettings.model");
 
 const createOrganization = (req, res) => {
-  console.log("Start Create org");
+  // console.log("Start Create org");
   // let taxClearDate = req.body.taxClearDate;
+  let error;
   let organization = new Organization({
     orgID: req.body.orgID,
     name: req.body.name,
@@ -45,13 +46,14 @@ const createOrganization = (req, res) => {
   // if (req.files.orgChart) {
   //   organization.orgChart = binary(req.files.orgChart.data);
   // }
-  console.log("req.files");
-  console.log(req.files);
+  // console.log("req.files");
+  // console.log(req.files);
   Object.values(req.files).forEach((val) => {
     //Here, val stores a file sent in each iteration
     for (let i = 0; i < val.length; i++) {
-      if(val[i].size> req.fileSize){
-        return res.json({errors: true, message: `File size cannot exceed ${req.fileSize} bytes.`})
+      if (val[i].size > req.fileSize) {
+        error = `File size cannot exceed ${req.fileSize} bytes.`;
+        break;
       }
 
       let index = val[i].fieldname; //fieldname is the name of the input field in the frontend
@@ -97,20 +99,25 @@ const createOrganization = (req, res) => {
     }
   });
 
-  organization
-    .save()
-    .then(() =>
-      res.json({
-        success: true,
-        message: `${req.body.name} has been enlisted as an organization.`,
-      })
-    )
-    .catch((err) => res.json(err));
+  if (error) {
+    return res.json({ errors: true, message: error });
+  } else {
+    organization
+      .save()
+      .then(() =>
+        res.json({
+          success: true,
+          message: `${req.body.name} has been enlisted as an organization.`,
+        })
+      )
+      .catch((err) => res.json(err));
+  }
 };
 
 const updateOrganizationInfo = (req, res) => {
   Organization.findOne({ orgID: req.params.orgID })
     .then((organization) => {
+      let error;
       let moa = [],
         mou = [],
         orgChart = [],
@@ -179,8 +186,9 @@ const updateOrganizationInfo = (req, res) => {
 
         for (let i = 0; i < val.length; i++) {
           console.log("Enter val");
-          if(val[i].size> req.fileSize){
-            return res.json({errors: true, message: `File size cannot exceed ${req.fileSize} bytes.`})
+          if (val[i].size > req.fileSize) {
+            error = `File size cannot exceed ${req.fileSize} bytes.`;
+            break;
           }
           let index = val[i].fieldname; //fieldname is the name of the input field in the frontend
           console.log(index);
@@ -237,15 +245,19 @@ const updateOrganizationInfo = (req, res) => {
         console.log("end of val");
       });
 
-      organization
-        .save()
-        .then(() =>
-          res.json({
-            success: true,
-            message: `${req.params.orgID} organizational information has been updated.`,
-          })
-        )
-        .catch((err) => res.json(err));
+      if (error) {
+        return res.json({ errors: true, message: error });
+      } else {
+        organization
+          .save()
+          .then(() =>
+            res.json({
+              success: true,
+              message: `${req.params.orgID} organizational information has been updated.`,
+            })
+          )
+          .catch((err) => res.json(err));
+      }
     })
     .catch((err) => res.json(err));
 };
