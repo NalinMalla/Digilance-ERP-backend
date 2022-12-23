@@ -71,6 +71,7 @@ const createRootBranch = async (req, res) => {
     req.body.districtCode,
     req.body.vdcCode
   );
+
   console.log(branchID);
   let branchHead;
   if (req.body.branchHead) {
@@ -252,6 +253,45 @@ const createBranch = (req, res) => {
         });
       }
     });
+};
+
+const createBranchesByCSV = async (req, res) => {
+  // if(req.body.length > 1){
+
+  // }
+  let error;
+  let branchInputs = req.body;
+  console.log(branchInputs);
+  for (let i = 0; i < branchInputs.length; i++) {
+    if (error) {
+      return res.json(error);
+    }
+    if (branchInputs[i].countryCode) {
+      console.log("branchInputs[i]");
+      console.log(branchInputs[i]);
+      let request = {
+        body: branchInputs[i],
+      };
+      let response = {
+        json: (msg) => {
+          console.log(msg);
+        },
+      };
+      createBranch(request, response)
+        // .then()
+        // .catch((err) => {
+        //   error = err;
+        // });
+    }
+  }
+  if (error) {
+    return res.status(400).json(error);
+  } else {
+    return res.json({
+      success: true,
+      message: "All users in the CSV file have been registered.",
+    });
+  }
 };
 
 const updateBasicBranchInfo = (req, res) => {
@@ -774,3 +814,4 @@ exports.getLocationByCountry = getLocationByCountry;
 exports.getLocationByState = getLocationByState;
 exports.getLocationByDistrict = getLocationByDistrict;
 exports.getLocationByVDC = getLocationByVDC;
+exports.createBranchesByCSV = createBranchesByCSV;

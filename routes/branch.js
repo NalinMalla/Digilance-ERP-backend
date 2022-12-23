@@ -19,6 +19,13 @@ router
     branchController.createBranch
   );
 
+  router
+  .route("/addCSV")
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    branchController.createBranchesByCSV
+  );
+
 router
   .route("/root/create")
   .post(

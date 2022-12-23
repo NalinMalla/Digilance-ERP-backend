@@ -6,10 +6,13 @@ let User = require("../models/user.model");
 let SignInLog = require("../models/userSignInLog.model");
 let AccessLog = require("../models/userAccessLog.model");
 let PasswordComplexity = require("../models/passwordComplexity.model");
+const { request, response } = require("express");
 // let userLock = require("../middleWares/userLock");
 
 //Basic User CRUD functions
 const createUser = async (req, res) => {
+  console.log("req.body");
+  console.log(req.body);
   const eID = Number(req.body.eID);
   const salt = await bcrypt.genSalt(10);
   const secPassword = await bcrypt.hash(req.body.password, salt);
@@ -26,7 +29,7 @@ const createUser = async (req, res) => {
     branchID: req.body.branchID,
   });
 
-  newUser
+  await newUser
     .save()
     .then(() =>
       res.json({
@@ -34,7 +37,44 @@ const createUser = async (req, res) => {
         message: `New user ${req.body.userName} created.`,
       })
     )
-    .catch((err) => res.status(400).json(err));
+    .catch((err) => res.json(err));
+};
+
+const createUsersByCSV = async (req, res) => {
+  // if(req.body.length > 1){
+
+  // }
+  let error;
+  let userInputs = req.body;
+  console.log(userInputs);
+  for (let i = 0; i < userInputs.length; i++) {
+    if(error){
+      return res.json(error);
+    }
+    if (userInputs[i].userName) {
+      console.log("userInputs[i]");
+      console.log(userInputs[i]);
+      let request = {
+        body: userInputs[i],
+      };
+      let response = {
+        json: (msg) => {
+          console.log(msg);
+        },
+      };
+      await createUser(request, response)
+        .then()
+        .catch((err) => {
+          error = err;
+        });
+    }
+  }
+  if(error){
+    return res.status(400).json(error);
+  }
+  else{
+    return res.json({success: true, message: "All users in the CSV file have been registered."})
+  }
 };
 
 const findAllUsers = (req, res) => {
@@ -446,3 +486,4 @@ exports.findAllSignInLog = findAllSignInLog;
 exports.findAllAccessLog = findAllAccessLog;
 exports.updatePasswordComplexity = updatePasswordComplexity;
 exports.retrievePasswordComplexity = retrievePasswordComplexity;
+exports.createUsersByCSV = createUsersByCSV;
