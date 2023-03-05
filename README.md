@@ -1,1 +1,1 @@
-﻿# This is the backend for an ERP that I have been developing and it currently only has some basic functionality like login module, access control middlewares, log generation, organization structure representation, CRUD functions.
+﻿# This is the backend for an ERP that I have been developing and it currently only has some basic functionality like login module, access control middlewares, log generation, organization structure representation and CRUD functions.
