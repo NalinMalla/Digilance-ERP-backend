@@ -1,16 +1,19 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 
 let User = require("../models/user.model");
 let SignInLog = require("../models/userSignInLog.model");
 let AccessLog = require("../models/userAccessLog.model");
 let PasswordComplexity = require("../models/passwordComplexity.model");
+const { request, response } = require("express");
 // let userLock = require("../middleWares/userLock");
 
 //Basic User CRUD functions
 const createUser = async (req, res) => {
+  console.log("req.body");
+  console.log(req.body);
   const eID = Number(req.body.eID);
-
   const salt = await bcrypt.genSalt(10);
   const secPassword = await bcrypt.hash(req.body.password, salt);
 
@@ -22,9 +25,11 @@ const createUser = async (req, res) => {
     passwordHistory: [secPassword],
     privilege: req.body.privilege,
     modules: req.body.modules,
+    level: req.body.level,
+    branchID: req.body.branchID,
   });
 
-  newUser
+  await newUser
     .save()
     .then(() =>
       res.json({
@@ -32,7 +37,44 @@ const createUser = async (req, res) => {
         message: `New user ${req.body.userName} created.`,
       })
     )
-    .catch((err) => res.status(400).json(err));
+    .catch((err) => res.json(err));
+};
+
+const createUsersByCSV = async (req, res) => {
+  // if(req.body.length > 1){
+
+  // }
+  let error;
+  let userInputs = req.body;
+  console.log(userInputs);
+  for (let i = 0; i < userInputs.length; i++) {
+    if(error){
+      return res.json(error);
+    }
+    if (userInputs[i].userName) {
+      console.log("userInputs[i]");
+      console.log(userInputs[i]);
+      let request = {
+        body: userInputs[i],
+      };
+      let response = {
+        json: (msg) => {
+          console.log(msg);
+        },
+      };
+      await createUser(request, response)
+        .then()
+        .catch((err) => {
+          error = err;
+        });
+    }
+  }
+  if(error){
+    return res.status(400).json(error);
+  }
+  else{
+    return res.json({success: true, message: "All users in the CSV file have been registered."})
+  }
 };
 
 const findAllUsers = (req, res) => {
@@ -44,11 +86,64 @@ const findAllUsers = (req, res) => {
 const findUserByEID = (req, res) => {
   User.findOne({ eID: req.params.eID })
     .then((user) =>
-      user === null
-        ? res
-            .status(404)
-            .json({ error: `User with eID ${req.params.eID} does not exist.` })
-        : res.json(user)
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with eID ${req.params.eID} does not exist.`,
+          })
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
+const findUserByID = (req, res) => {
+  User.findOne({ _id: req.params._id }) //Normally id works but id is being used by authJwt middleware
+    .then((user) =>
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with id ${req.params.id} does not exist.`,
+          })
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
+const findUserByUName = (req, res) => {
+  User.findOne({ userName: req.params.userName })
+    .then((user) =>
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with user name ${req.params.userName} does not exist.`,
+          })
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
+const findUsersByName = (req, res) => {
+  User.find({ name: req.params.name })
+    .then((user) =>
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `User with user name ${req.params.userName} does not exist.`,
+          })
+    )
+    .catch((err) => res.status(400).json(err));
+};
+
+const findUsersByBranchID = (req, res) => {
+  User.find({ branchID: req.params.branchID })
+    .then((user) =>
+      user
+        ? res.json(user)
+        : res.status(404).json({
+            errors: true,
+            message: `Branch ${req.params.branchID} currently doesn't have any employees.`,
+          })
     )
     .catch((err) => res.status(400).json(err));
 };
@@ -73,6 +168,8 @@ const updateUser = (req, res) => {
       user.eID = Number(req.body.eID);
       user.privilege = req.body.privilege;
       user.modules = req.body.modules;
+      user.level = req.body.level;
+      user.branchID = req.body.branchID;
 
       user
         .save()
@@ -137,10 +234,9 @@ const logUserSignIn = (user, error, clientIP) => {
             .catch((err) => console.log(err));
         })
         .catch((err) => console.log(err));
-
     }
   }
-  console.log("continuity:"+continuity);
+  console.log("continuity:" + continuity);
   const userSignInLog = new SignInLog({
     eID: eID,
     userName: userName,
@@ -148,7 +244,7 @@ const logUserSignIn = (user, error, clientIP) => {
     errorCode: error,
     remarks: error ? "Unsuccessful Login" : "Successful Login",
     loggingIP: clientIP,
-    continuity: continuity
+    continuity: continuity,
   });
 
   userSignInLog
@@ -308,12 +404,12 @@ const lockUserByID = (req, res) => {
           user.lockPeriod.start = new Date();
           user.lock = true;
         }
-        if(req.body.continuity){
+        if (req.body.continuity) {
           user.continuity = req.body.continuity;
         }
       } else {
         user.lock = true;
-        if(req.body.continuity){
+        if (req.body.continuity) {
           user.continuity = req.body.continuity;
         }
       }
@@ -377,6 +473,10 @@ const retrievePasswordComplexity = (req, res) => {
 exports.createUser = createUser;
 exports.findAllUsers = findAllUsers;
 exports.findUserByEID = findUserByEID;
+exports.findUserByID = findUserByID;
+exports.findUserByUName = findUserByUName;
+exports.findUsersByName = findUsersByName;
+exports.findUsersByBranchID = findUsersByBranchID;
 exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 exports.login = login;
@@ -386,3 +486,4 @@ exports.findAllSignInLog = findAllSignInLog;
 exports.findAllAccessLog = findAllAccessLog;
 exports.updatePasswordComplexity = updatePasswordComplexity;
 exports.retrievePasswordComplexity = retrievePasswordComplexity;
+exports.createUsersByCSV = createUsersByCSV;

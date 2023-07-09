@@ -5,33 +5,96 @@ const userController = require("../controller/user.controllers");
 
 router
   .route("/all")
-  .get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.findAllUsers);
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.findAllUsers
+  );
 
 router
   .route("/add")
-  .post([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.createUser);
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.createUser
+  );
 
-router.route("/:eID").get([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.findUserByEID);
+router
+  .route("/addCSV")
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.createUsersByCSV
+  );
 
-router.route("/:eID/getInfo").get([authJwt.verifyToken, authJwt.selfVerification, authJwt.accessGrant], userController.findUserByEID);
+router
+  .route("/:eID")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.findUserByEID
+  );
+
+router
+  .route("/id/:_id")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.findUserByID
+  );
+
+router
+  .route("/userName/:userName")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.findUserByUName
+  );
+
+router
+  .route("/name/:name")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.findUsersByName
+  );
+
+router
+  .route("/branch/:branchID")
+  .get(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.findUsersByBranchID
+  );
+
+router
+  .route("/:eID/getInfo")
+  .get(
+    [authJwt.verifyToken, authJwt.selfVerification, authJwt.accessGrant],
+    userController.findUserByEID
+  );
 
 router
   .route("/update/:eID")
-  .put([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.updateUser);
+  .put(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.updateUser
+  );
 
 router
   .route("/delete/:eID")
-  .post([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.deleteUser);
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.deleteUser
+  );
 
 router.route("/login").post(userController.login);
 
 router
   .route("/unlock/:eID")
-  .post([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.unlockUserByID);
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.unlockUserByID
+  );
 
 router
   .route("/lock/:eID")
-  .post([authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant], userController.lockUserByID);
+  .post(
+    [authJwt.verifyToken, authJwt.isAdmin, authJwt.accessGrant],
+    userController.lockUserByID
+  );
 
 router
   .route("/authJwt")

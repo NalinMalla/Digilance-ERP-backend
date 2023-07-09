@@ -60,6 +60,10 @@ const UserSchema = new schema(
     continuity: {
       type: String,
     },
+
+    level: {type: Number, required: [true, "Users Access Level is mandatory"]},
+
+    branchID: {type: String}
   },
   {
     timestamps: true,
