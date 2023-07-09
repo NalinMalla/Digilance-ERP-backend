@@ -27,7 +27,7 @@ app.use("/branch", branchRouter);
 app.use("/uploads", express.static("uploads")); //allows /uploads in url to access uploads folder
 
 //  Connect to MongoDB database.
-const ATLAS_URI = "mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.5.0";
+const ATLAS_URI = "mongodb://127.0.0.1:27017/project1";
 mongoose
   .connect(ATLAS_URI, {
     useNewUrlParser: true,
